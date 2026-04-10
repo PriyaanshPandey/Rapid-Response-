@@ -1,0 +1,1399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Emergency Command Center</title>
+  <style>
+    :root {
+      --danger:     #ff4d4d;
+      --success:    #22c55e;
+      --warning:    #f59e0b;
+      --info:       #38bdf8;
+      --bg-primary: #0d0d0d;
+      --bg-card:    #161616;
+      --border:     #2a2a2a;
+      --text-white: #ffffff;
+      --text-gray:  #9ca3af;
+      --text-muted: #6b7280;
+      --radius:     8px;
+      --padding:    14px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      background: var(--bg-primary);
+      color: var(--text-white);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    @keyframes blink      { 0%,100%{opacity:1} 50%{opacity:0} }
+    @keyframes pulse-scale{ 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.4);opacity:.8} }
+    @keyframes card-glow-red  { 0%,100%{box-shadow:0 0 0 0 rgba(255,77,77,0)}  50%{box-shadow:0 0 15px 0 rgba(255,77,77,.3)} }
+    @keyframes card-glow-green{ 0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}  50%{box-shadow:0 0 15px 0 rgba(34,197,94,.3)} }
+    @keyframes card-glow-amber{ 0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,0)} 50%{box-shadow:0 0 15px 0 rgba(245,158,11,.3)} }
+    @keyframes progress-load  { from{width:0%} }
+    @keyframes breathing      { 0%,100%{transform:scale(1)} 50%{transform:scale(1.02)} }
+    @keyframes ripple         { to{transform:scale(4);opacity:0} }
+    @keyframes slide-in-left  { from{opacity:0;transform:translateX(-20px)} to{opacity:1;transform:translateX(0)} }
+    @keyframes alert-flash    { 0%{background-color:rgba(255,255,255,.1)} 100%{background-color:transparent} }
+    @keyframes scanline       { from{transform:translateY(-100%)} to{transform:translateY(100%)} }
+    @keyframes map-glow       { 0%,100%{box-shadow:0 0 5px rgba(56,189,248,.2);border-color:var(--border)} 50%{box-shadow:0 0 15px rgba(56,189,248,.4);border-color:rgba(56,189,248,.6)} }
+    @keyframes dot-pulse      { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.6);opacity:.7} }
+    @keyframes fade-in        { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes spin           { to{transform:rotate(360deg)} }
+    @keyframes pulse-border-red { 0%,100%{box-shadow:0 0 0 0 rgba(255,77,77,0)} 50%{box-shadow:0 0 10px 2px rgba(255,77,77,.35)} }
+
+    .blink-red   { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--danger);  animation:pulse-scale 1s ease-in-out infinite; flex-shrink:0; }
+    .blink-green { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--success); animation:blink 1.2s ease-in-out infinite; flex-shrink:0; }
+
+    .card       { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:var(--padding); }
+    .card-title { font-size:13px; font-weight:700; color:var(--text-white); letter-spacing:.04em; text-transform:uppercase; margin-bottom:12px; }
+
+    .badge         { display:inline-block; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; }
+    .badge-danger  { background:rgba(255,77,77,.15);  color:var(--danger);  }
+    .badge-success { background:rgba(34,197,94,.15);  color:var(--success); }
+    .badge-warning { background:rgba(245,158,11,.15); color:var(--warning); }
+    .badge-info    { background:rgba(56,189,248,.15); color:var(--info);    }
+    .badge-idle    { background:rgba(156,163,175,.15);color:var(--text-gray); }
+    .badge-live    { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:4px; font-size:11px; font-weight:700; letter-spacing:.06em; background:rgba(34,197,94,.12); color:var(--success); border:1px solid rgba(34,197,94,.3); animation:breathing 2s infinite; }
+
+    /* Header */
+    header { width:100%; background:var(--bg-card); border-bottom:1px solid var(--border); padding:10px 20px; display:flex; align-items:center; gap:14px; flex-shrink:0; }
+    .header-brand { display:flex; align-items:center; gap:10px; white-space:nowrap; flex-shrink:0; }
+    .brand-title  { font-size:24px; font-weight:800; color:var(--text-white); letter-spacing:-.01em; }
+    .header-stats { display:flex; gap:10px; flex:1; justify-content:flex-end; }
+    .stat-card { background:var(--bg-primary); border:1px solid var(--border); border-radius:var(--radius); padding:8px 14px; min-width:150px; flex:1; max-width:200px; }
+    .stat-label{ font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; margin-bottom:3px; }
+    .stat-value{ font-size:20px; font-weight:800; line-height:1.1; margin-bottom:3px; }
+    .stat-sub  { font-size:11px; color:var(--text-muted); display:flex; align-items:center; gap:5px; }
+    .stat-card.danger  .stat-label,.stat-card.danger  .stat-value { color:var(--danger);  animation:card-glow-red   2s infinite; }
+    .stat-card.success .stat-label,.stat-card.success .stat-value { color:var(--success); animation:card-glow-green 2s infinite; }
+    .stat-card.warning .stat-label,.stat-card.warning .stat-value { color:var(--warning); animation:card-glow-amber 2s infinite; }
+
+    /* Simulate Fire Button */
+    #btn-sim-open {
+      padding:8px 16px; background:transparent; border:1px solid var(--danger);
+      color:var(--danger); border-radius:6px; font-size:12px; font-weight:700;
+      cursor:pointer; letter-spacing:.06em; text-transform:uppercase;
+      display:flex; align-items:center; gap:7px; flex-shrink:0;
+      transition:background .2s, box-shadow .2s;
+      animation:pulse-border-red 2s infinite;
+    }
+    #btn-sim-open:hover { background:rgba(255,77,77,.1); box-shadow:0 0 16px rgba(255,77,77,.4); }
+
+    /* Simulation Modal */
+    #sim-overlay {
+      display:none; position:fixed; inset:0; background:rgba(0,0,0,.8);
+      z-index:1000; align-items:center; justify-content:center;
+      backdrop-filter:blur(4px);
+    }
+    #sim-overlay.open { display:flex; }
+    #sim-panel {
+      background:var(--bg-card); border:1px solid rgba(255,77,77,.3);
+      border-radius:12px; padding:26px; width:440px; max-width:95vw;
+      box-shadow:0 0 50px rgba(255,77,77,.15);
+      animation:fade-in .2s ease-out; position:relative;
+    }
+    #sim-panel h2 { font-size:15px; font-weight:800; color:var(--danger); letter-spacing:.06em; text-transform:uppercase; margin-bottom:3px; display:flex; align-items:center; gap:8px; }
+    #sim-panel .sim-desc { font-size:12px; color:var(--text-muted); margin-bottom:20px; }
+    .sim-close { position:absolute; top:16px; right:18px; background:none; border:none; color:var(--text-muted); font-size:22px; cursor:pointer; line-height:1; transition:color .2s; }
+    .sim-close:hover { color:#fff; }
+    .sim-section-label { font-size:10px; font-weight:700; color:var(--text-muted); letter-spacing:.08em; text-transform:uppercase; margin-bottom:8px; }
+    .sim-node-grid { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:18px; }
+    .sim-node-btn {
+      padding:5px 12px; border:1px solid var(--border); background:var(--bg-primary);
+      color:var(--text-gray); border-radius:4px; font-size:12px; font-weight:600;
+      cursor:pointer; transition:all .15s;
+    }
+    .sim-node-btn:hover    { border-color:var(--warning); color:var(--warning); background:rgba(245,158,11,.08); }
+    .sim-node-btn.selected { border-color:var(--danger);  color:var(--danger);  background:rgba(255,77,77,.12); }
+    .sim-divider { border:none; border-top:1px solid var(--border); margin:16px 0; }
+    .sim-actions { display:flex; flex-direction:column; gap:8px; }
+    .btn-sim {
+      width:100%; padding:11px; border:none; border-radius:7px;
+      font-size:13px; font-weight:700; cursor:pointer; letter-spacing:.03em;
+      display:flex; align-items:center; justify-content:center; gap:8px;
+      transition:all .2s;
+    }
+    .btn-sim:disabled { opacity:.45; cursor:not-allowed; }
+    .btn-sim.fire   { background:var(--danger);  color:#fff; }
+    .btn-sim.fire:hover:not(:disabled)   { background:#cc0000; box-shadow:0 0 20px rgba(255,77,77,.4); }
+    .btn-sim.spread { background:var(--warning); color:#000; }
+    .btn-sim.spread:hover:not(:disabled) { background:#d97706; }
+    .btn-sim.chaos  { background:#7c3aed; color:#fff; }
+    .btn-sim.chaos:hover:not(:disabled)  { background:#5b21b6; box-shadow:0 0 20px rgba(124,58,237,.4); }
+    .btn-sim.reset  { background:transparent; color:var(--text-muted); border:1px solid var(--border); }
+    .btn-sim.reset:hover:not(:disabled)  { color:#fff; border-color:#555; }
+    .sim-status { margin-top:10px; font-size:12px; color:var(--text-muted); text-align:center; min-height:16px; }
+    .sim-status.ok  { color:var(--success); }
+    .sim-status.err { color:var(--danger); }
+    .sim-progress-bar {
+      height:3px; background:var(--border); border-radius:2px; margin-top:10px; overflow:hidden; display:none;
+    }
+    .sim-progress-fill { height:100%; background:var(--danger); border-radius:2px; width:0%; transition:width .3s; }
+
+    /* Layout */
+    .main-content { flex:1; display:flex; gap:12px; padding:12px; overflow:hidden; min-height:0; }
+    .col-left  { width:25%; flex-shrink:0; display:flex; flex-direction:column; gap:12px; overflow-y:auto; }
+    .col-center{ flex:1; min-width:0; display:flex; flex-direction:column; }
+    .col-right { width:25%; flex-shrink:0; display:flex; flex-direction:column; gap:12px; overflow-y:auto; }
+
+    .guest-list { list-style:none; }
+    .guest-row  { display:flex; align-items:center; gap:8px; padding:9px 0; border-bottom:1px solid var(--border); animation:slide-in-left .4s ease-out forwards; position:relative; }
+    .guest-row:last-child { border-bottom:none; padding-bottom:0; }
+    .guest-row::before { content:''; position:absolute; left:-8px; top:0; bottom:0; width:3px; background:var(--danger); opacity:0; transition:opacity .2s; border-radius:2px; }
+    .guest-row:hover::before { opacity:1; }
+    .guest-room { font-size:13px; font-weight:700; color:var(--warning); width:34px; flex-shrink:0; }
+    .guest-name { flex:1; font-size:13px; color:var(--text-white); font-weight:500; }
+    .btn-rescue { padding:4px 10px; border:1px solid var(--danger); background:transparent; color:var(--danger); border-radius:4px; font-size:11px; font-weight:600; cursor:pointer; letter-spacing:.04em; transition:all .2s; white-space:nowrap; flex-shrink:0; }
+    .btn-rescue:hover { background:var(--danger); color:#fff; transform:scale(1.03); }
+    .btn-rescue:disabled { opacity:.5; cursor:default; transform:none; }
+
+    .assembly-count { font-size:42px; font-weight:900; color:var(--success); line-height:1; margin-bottom:10px; letter-spacing:-2px; }
+    .progress-track { height:8px; background:var(--border); border-radius:4px; margin-bottom:6px; overflow:hidden; }
+    .progress-fill  { height:100%; background:var(--success); border-radius:4px; transition:width .6s ease; animation:progress-load 1.5s ease-out; }
+    .progress-meta  { display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); margin-bottom:14px; }
+    .btn-whatsapp   { width:100%; padding:11px; background:var(--success); color:#fff; border:none; border-radius:var(--radius); font-size:13px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; letter-spacing:.03em; transition:background .2s,transform .1s; animation:breathing 2s infinite; position:relative; overflow:hidden; }
+    .btn-whatsapp:hover  { background:#16a34a; }
+    .btn-whatsapp:active { transform:scale(.98); }
+    .whatsapp-icon  { width:20px; height:20px; background:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; color:var(--success); font-weight:900; }
+    .whatsapp-success { display:none; margin-top:8px; font-size:12px; color:#4ade80; text-align:center; padding:6px; background:rgba(34,197,94,.08); border-radius:4px; border:1px solid rgba(34,197,94,.2); }
+    .msg-preview    { margin-top:10px; background:var(--bg-primary); border:1px solid var(--border); border-radius:4px; padding:10px; font-size:12px; color:var(--text-muted); line-height:1.6; font-style:italic; }
+    span.ripple     { position:absolute; background:rgba(255,255,255,.4); border-radius:50%; transform:scale(0); animation:ripple .6s linear; pointer-events:none; }
+
+    .map-card { flex:1; display:flex; flex-direction:column; position:relative; animation:map-glow 4s infinite; }
+    .map-wrapper { position:relative; flex:1; min-height:0; background:#111; border-radius:6px; overflow:hidden; border:1px solid var(--border); }
+    .map-wrapper img { width:100%; height:100%; object-fit:contain; display:block; border-radius:6px; background:#000; }
+    .map-wrapper::before { content:''; position:absolute; inset:0; background:repeating-linear-gradient(to bottom,transparent 0,transparent 4px,rgba(255,255,255,.03) 5px); pointer-events:none; z-index:5; }
+    .map-wrapper::after  { content:''; position:absolute; top:0; left:0; width:100%; height:30%; background:linear-gradient(to bottom,transparent,rgba(56,189,248,.1),transparent); animation:scanline 5s linear infinite; pointer-events:none; z-index:6; }
+    .map-live-indicator { position:absolute; top:10px; left:10px; display:flex; align-items:center; gap:6px; color:var(--success); font-size:11px; font-weight:700; background:rgba(0,0,0,.6); padding:4px 8px; border-radius:4px; border:1px solid rgba(34,197,94,.3); z-index:20; }
+
+    .map-dot { position:absolute; z-index:15; transform:translate(-50%,-50%); cursor:pointer; }
+    .map-dot-inner { width:12px; height:12px; border-radius:50%; animation:dot-pulse 1.5s ease-in-out infinite; }
+    .map-dot-label { position:absolute; top:-22px; left:50%; transform:translateX(-50%); font-size:10px; font-weight:700; white-space:nowrap; background:rgba(0,0,0,.85); padding:2px 5px; border-radius:3px; pointer-events:none; opacity:0; transition:opacity .2s; }
+    .map-dot:hover .map-dot-label { opacity:1; }
+    .dot-help   .map-dot-inner { background:var(--danger);  box-shadow:0 0 8px var(--danger); }
+    .dot-safe   .map-dot-inner { background:var(--success); box-shadow:0 0 8px var(--success); }
+    .dot-moving .map-dot-inner { background:var(--info);    box-shadow:0 0 8px var(--info); }
+    .dot-idle   .map-dot-inner { background:var(--text-muted); box-shadow:none; animation:none; }
+    .dot-staff  .map-dot-inner { width:16px; height:16px; background:transparent; border:3px solid #fff; box-shadow:0 0 10px #fff; animation:none; }
+
+    /* Fire zone overlay on map */
+    .fire-zone {
+      position:absolute; border-radius:50%; pointer-events:none; z-index:12;
+      transform:translate(-50%,-50%);
+      background:radial-gradient(circle, rgba(255,77,77,.55) 0%, rgba(245,158,11,.3) 50%, transparent 75%);
+      animation:fire-breathe 1.5s ease-in-out infinite;
+    }
+    @keyframes fire-breathe {
+      0%,100% { transform:translate(-50%,-50%) scale(1); opacity:.8; }
+      50%      { transform:translate(-50%,-50%) scale(1.15); opacity:1; }
+    }
+
+    .card-header-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+    .card-header-row .card-title { margin-bottom:0; }
+    .alert-list { display:flex; flex-direction:column; gap:10px; }
+    .alert-row  { display:flex; gap:12px; padding:10px; background:rgba(255,255,255,.03); border-left:4px solid var(--border); border-radius:0 4px 4px 0; animation:alert-flash .5s ease-out, fade-in .3s ease-out; }
+    .alert-row.al-danger  { border-left-color:var(--danger);  background:rgba(239,68,68,.05); }
+    .alert-row.al-warning { border-left-color:var(--warning); background:rgba(245,158,11,.05); }
+    .alert-row.al-info    { border-left-color:var(--info);    background:rgba(56,189,248,.05); }
+    .alert-icon-circle { width:10px; height:10px; border-radius:50%; margin-top:4px; flex-shrink:0; box-shadow:0 0 8px currentColor; }
+    .alert-content { flex:1; }
+    .alert-head    { display:flex; justify-content:space-between; margin-bottom:4px; }
+    .alert-label   { font-size:11px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; }
+    .alert-txt     { font-size:13px; font-weight:600; color:var(--text-white); line-height:1.4; }
+    .alert-time-stamp { font-family:monospace; font-size:11px; color:var(--text-muted); }
+
+    .staff-row  { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); animation:fade-in .3s ease-out; }
+    .staff-row:last-child { border-bottom:none; padding-bottom:0; }
+    .avatar     { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; flex-shrink:0; }
+    .avatar-amber{ background:rgba(245,158,11,.2); color:var(--warning); border:1px solid rgba(245,158,11,.35); }
+    .avatar-green{ background:rgba(34,197,94,.2);  color:var(--success); border:1px solid rgba(34,197,94,.35); }
+    .avatar-blue { background:rgba(56,189,248,.2); color:var(--info);    border:1px solid rgba(56,189,248,.35); }
+    .avatar-red  { background:rgba(255,77,77,.2);  color:var(--danger);  border:1px solid rgba(255,77,77,.35); }
+    .staff-info  { flex:1; min-width:0; }
+    .staff-name  { font-size:13px; font-weight:700; color:var(--text-white); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .staff-task  { font-size:11px; color:var(--text-muted); line-height:1.4; }
+    .gps-dot     { display:inline-block; width:6px; height:6px; background:var(--info); border-radius:50%; margin-right:4px; animation:blink 1.5s infinite; box-shadow:0 0 4px var(--info); }
+
+    .priority-row  { display:flex; align-items:center; gap:8px; padding:9px 0; border-bottom:1px solid var(--border); animation:fade-in .3s ease-out; }
+    .priority-row:last-child { border-bottom:none; padding-bottom:0; }
+    .priority-info { flex:1; min-width:0; }
+    .priority-name { font-size:13px; font-weight:700; color:var(--text-white); }
+    .priority-meta { font-size:11px; color:var(--text-muted); }
+
+    .staff-switch-btns { display:flex; flex-direction:column; gap:10px; }
+    .staff-switch-btn  { display:flex; align-items:center; gap:10px; padding:11px 14px; border-radius:var(--radius); border:1px solid var(--border); background:rgba(255,255,255,.03); text-decoration:none; color:var(--text-white); transition:background .2s,border-color .2s,box-shadow .2s; }
+    .staff-switch-btn--rescue:hover { background:rgba(245,158,11,.07); border-color:rgba(245,158,11,.5); box-shadow:0 0 12px rgba(245,158,11,.25); }
+    .staff-switch-btn--evac:hover   { background:rgba(34,197,94,.07);  border-color:rgba(34,197,94,.5);  box-shadow:0 0 12px rgba(34,197,94,.25); }
+    .staff-switch-icon  { font-size:18px; flex-shrink:0; }
+    .staff-switch-label { flex:1; display:flex; flex-direction:column; gap:1px; }
+    .staff-switch-role  { font-size:13px; font-weight:700; }
+    .staff-switch-desc  { font-size:11px; color:var(--text-muted); }
+    .staff-switch-arrow { font-size:16px; color:var(--text-muted); transition:color .2s,transform .2s; }
+    .staff-switch-btn:hover .staff-switch-arrow { color:var(--text-white); transform:translateX(3px); }
+
+    footer { width:100%; background:var(--bg-card); border-top:1px solid var(--border); padding:8px 20px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+    .footer-left,.footer-right { font-size:12px; color:var(--text-muted); }
+    .footer-right span { color:var(--text-white); font-weight:600; }
+    @keyframes footer-flash { 0%{background:rgba(34,197,94,.2)} 100%{background:transparent} }
+    .footer-left { padding:2px 8px; border-radius:4px; margin-left:-8px; }
+    .footer-left.flash { animation:footer-flash .3s ease-out; }
+
+    .spinner { display:inline-block; width:14px; height:14px; border:2px solid var(--border); border-top-color:var(--info); border-radius:50%; animation:spin .7s linear infinite; vertical-align:middle; margin-right:6px; }
+    .empty-state { font-size:12px; color:var(--text-muted); text-align:center; padding:12px 0; font-style:italic; }
+
+    ::-webkit-scrollbar       { width:5px; height:5px; }
+    ::-webkit-scrollbar-track { background:var(--bg-primary); }
+    ::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
+    ::-webkit-scrollbar-thumb:hover { background:#3a3a3a; }
+  </style>
+</head>
+<body>
+
+<!-- ── SIMULATION MODAL ───────────────────────────────────────── -->
+<div id="sim-overlay" onclick="if(event.target===this)closeSimPanel()">
+  <div id="sim-panel">
+    <button class="sim-close" onclick="closeSimPanel()">×</button>
+    <h2>🔥 Fire Simulation</h2>
+    <p class="sim-desc">Simulate a real fire event. All actions call your live backend API and update user statuses in MongoDB.</p>
+
+    <div class="sim-section-label">1. Select Fire Origin Node</div>
+    <div class="sim-node-grid" id="sim-node-grid">
+      <!-- populated by JS from NODE_POSITIONS keys -->
+    </div>
+
+    <hr class="sim-divider">
+
+    <div class="sim-section-label">2. Run Simulation</div>
+    <div class="sim-actions">
+
+      <!-- Step 1: Trigger fire -->
+      <button class="btn-sim fire" id="btn-trigger-fire" onclick="simTriggerFire()">
+        🔥 Trigger Fire at Selected Node
+      </button>
+
+      <!-- Step 2: Spread fire -->
+      <button class="btn-sim spread" id="btn-spread-fire" onclick="simSpreadFire()" disabled>
+        🌊 Spread Fire to Adjacent Nodes
+      </button>
+
+      <!-- Step 3: Chaos — randomly set users to help/moving/safe -->
+      <button class="btn-sim chaos" id="btn-chaos" onclick="simChaos()" disabled>
+        ⚡ Simulate Guest Panic (Random Statuses)
+      </button>
+
+      <hr class="sim-divider" style="margin:4px 0">
+
+      <!-- Reset -->
+      <button class="btn-sim reset" id="btn-reset-sim" onclick="simReset()">
+        ↺ Reset All Users to Idle
+      </button>
+    </div>
+
+    <div class="sim-progress-bar" id="sim-progress-bar">
+      <div class="sim-progress-fill" id="sim-progress-fill"></div>
+    </div>
+    <div class="sim-status" id="sim-status"></div>
+  </div>
+</div>
+
+<!-- ── HEADER ─────────────────────────────────────────────────── -->
+<header>
+  <div class="header-brand">
+    <span class="brand-title">Emergency Command Center</span>
+    <span class="blink-red" title="Active incident"></span>
+  </div>
+
+  <!-- SIMULATE FIRE BUTTON -->
+  <button id="btn-sim-open" onclick="openSimPanel()">
+     Simulate Fire
+  </button>
+  <button class="btn-sim reset" id="btn-stop-sim" onclick="simStop()">
+  ⛔ Stop Simulation 
+</button>
+
+  <div class="header-stats">
+    <div class="stat-card danger">
+      <div class="stat-label">Active Incident</div>
+      <div class="stat-value" id="incident-type">— None</div>
+      <div class="stat-sub"><span class="blink-red"></span><span id="incident-timer">--:--</span></div>
+    </div>
+    <div class="stat-card success">
+      <div class="stat-label">Guests Evacuated</div>
+      <div class="stat-value" id="stat-safe-count">—</div>
+      <div class="stat-sub" id="stat-safe-sub">Loading…</div>
+    </div>
+    <div class="stat-card warning">
+      <div class="stat-label">Need Help</div>
+      <div class="stat-value" id="stat-help-count">—</div>
+      <div class="stat-sub">Rescue staff deployed</div>
+    </div>
+    <div class="stat-card danger">
+      <div class="stat-label">Blocked Nodes</div>
+      <div class="stat-value" id="stat-blocked">—</div>
+      <div class="stat-sub" id="stat-blocked-sub">From active incident</div>
+    </div>
+  </div>
+</header>
+
+<!-- ── MAIN ───────────────────────────────────────────────────── -->
+<div class="main-content">
+
+  <aside class="col-left">
+    <div class="card">
+      <div class="card-title">Stuck Guests — Need Help</div>
+      <ul class="guest-list" id="stuck-guests-list">
+        <li class="empty-state"><span class="spinner"></span>Loading…</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title">Guest Assembly — Safe Count</div>
+      <div class="assembly-count" id="assembly-count">—</div>
+      <div class="progress-track">
+        <div class="progress-fill" id="assembly-progress" style="width:0%"></div>
+      </div>
+      <div class="progress-meta">
+        <span id="assembly-pct">0%</span>
+        <span id="assembly-frac">0 of 0</span>
+      </div>
+      <div style="font-size:13px;font-weight:700;color:var(--text-white);margin-bottom:4px">Notify All Guests</div>
+      <button class="btn-whatsapp" onclick="sendWhatsApp(event)">
+        <span class="whatsapp-icon">✉</span>Send WhatsApp Message
+      </button>
+      <div class="whatsapp-success" id="whatsapp-success">✔ Fire alert sent to all guests.</div>
+      <div class="msg-preview">"Please proceed immediately to the Assembly Point. This is an emergency evacuation notice."</div>
+    </div>
+  </aside>
+
+  <main class="col-center">
+    <div class="card map-card">
+      <div class="card-title">Live Floor Map — User Positions</div>
+      <div class="map-wrapper" id="map-wrapper">
+        <img src="floor-map.png" alt="Floor Map" />
+        <div id="map-dots-layer" style="position:absolute;inset:0;z-index:15;pointer-events:none"></div>
+        <div id="map-fire-layer" style="position:absolute;inset:0;z-index:10;pointer-events:none"></div>
+        <div style="position:absolute;bottom:10px;right:10px;background:rgba(0,0,0,.75);border:1px solid var(--border);border-radius:6px;padding:8px 10px;z-index:20;font-size:11px;display:flex;flex-direction:column;gap:5px">
+          <div style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:var(--danger);display:inline-block"></span> Help</div>
+          <div style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:var(--success);display:inline-block"></span> Safe</div>
+          <div style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:var(--info);display:inline-block"></span> Moving</div>
+          <div style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:var(--text-muted);display:inline-block"></span> Idle</div>
+          <div style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:rgba(255,100,0,.7);display:inline-block"></span> 🔥 Fire</div>
+        </div>
+        <div class="map-live-indicator"><span class="blink-green"></span>LIVE</div>
+      </div>
+    </div>
+  </main>
+
+  <aside class="col-right">
+    <div class="card">
+      <div class="card-header-row">
+        <div class="card-title">System Logs</div>
+        <span class="badge-live"><span class="blink-green"></span>LIVE</span>
+      </div>
+      <div class="alert-list" id="alert-list">
+        <div class="empty-state"><span class="spinner"></span>Loading…</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Staff Status</div>
+      <div id="staff-list"><div class="empty-state"><span class="spinner"></span>Loading…</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">All Guests</div>
+      <div id="guest-full-list"><div class="empty-state"><span class="spinner"></span>Loading…</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Staff Views</div>
+      <div class="staff-switch-btns">
+        <a href="staff 1.html" class="staff-switch-btn staff-switch-btn--rescue">
+          <span class="staff-switch-icon">🟠</span>
+          <span class="staff-switch-label"><span class="staff-switch-role">Staff‑1</span><span class="staff-switch-desc">Rescue POV</span></span>
+          <span class="staff-switch-arrow">→</span>
+        </a>
+        <a href="staff 2.html" class="staff-switch-btn staff-switch-btn--evac">
+          <span class="staff-switch-icon">🟢</span>
+          <span class="staff-switch-label"><span class="staff-switch-role">Staff‑2</span><span class="staff-switch-desc">Evacuation POV</span></span>
+          <span class="staff-switch-arrow">→</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<footer>
+  <div class="footer-left" id="footer-timestamp">Last Update: <span id="footer-time">--:--:--</span></div>
+  <div class="footer-right">User: <span>ADMIN</span></div>
+</footer>
+
+<script>
+let fireRadius = 15; // % distance threshold (tune this)
+  const API_BASE = 'http://localhost:5000';
+function getDistance(n1, n2) {
+  const p1 = NODE_POSITIONS[n1];
+  const p2 = NODE_POSITIONS[n2];
+  if (!p1 || !p2) return Infinity;
+
+  const dx = p1.x - p2.x;
+  const dy = p1.y - p2.y;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function assignStaffToGuests(users) {
+  const staff = users.filter(u => u.type === 'staff');
+  const guests = users.filter(u => u.type === 'guest' && u.status === 'help');
+
+  if (!staff.length) return; // ✅ ADD THIS LINE
+
+  guests.forEach((g, i) => {
+    const s = staff[i % staff.length];
+
+    apiPost('/api/user-status', {
+      userId: s._id,
+      assignedTo: g._id
+    });
+  });
+}
+
+async function updateGuestStatusByFire() {
+  const guests = allUsers.filter(u => u.type === 'guest');
+
+  for (let g of guests) {
+    let minDist = Infinity;
+
+    // check distance from ALL fire nodes
+    activeFireNodes.forEach(fn => {
+      const d = getDistance(g.node, fn);
+      if (d < minDist) minDist = d;
+    });
+
+    let newStatus = minDist <= fireRadius ? 'help' : 'safe';
+
+    if (g.status === 'help' && g.assignedTo) {
+  newStatus = 'moving';
+}
+
+    // update only if changed
+    if (g.status !== newStatus) {
+      await apiPost('/api/user-status', {
+        userId: g._id,
+        status: newStatus
+      });
+    }
+  }
+}
+
+  const NODE_POSITIONS = {
+  // ── CORRIDOR JUNCTIONS (where corridors cross) ──
+  "CJ_TL": { x:12, y:16 },  // top-left corner
+  "CJ_TM": { x:50, y:16 },  // top-center (near staircase/exit)
+  "CJ_TR": { x:88, y:16 },  // top-right corner
+  "CJ_ML": { x:12, y:42 },  // middle-left junction
+  "CJ_MC": { x:47, y:42 },  // middle-center junction
+  "CJ_MR": { x:88, y:42 },  // middle-right junction
+  "CJ_LL": { x:12, y:66 },  // lower-left junction
+  "CJ_LC": { x:47, y:66 },  // lower-center junction
+  "CJ_LR": { x:88, y:66 },  // lower-right junction
+  "CJ_BL": { x:12, y:82 },  // bottom-left corner
+  "CJ_BC": { x:47, y:82 },  // bottom-center junction
+  "CJ_BR": { x:88, y:82 },  // bottom-right corner
+
+  // ── TOP ROOMS — doors open onto top corridor (y:16) ──
+  "1":  { x:17, y:17 }, "2":  { x:25, y:18 }, "3":  { x:32, y:18 }, "4":  { x:38, y:18 },
+  "11": { x:74, y:17 }, "12": { x:78, y:17 }, "13": { x:84, y:17 }, "14": { x:90, y:17 }, "15": { x:96, y:17 },
+
+  // ── MIDDLE ROOMS — doors open onto middle corridor (y:42) ──
+  "5":  { x:16, y:34 }, "6":  { x:22, y:34 }, "7":  { x:28, y:34 },
+  "8":  { x:34, y:34 }, "9":  { x:40, y:34 },
+  "33": { x:56, y:34 }, "34": { x:66, y:34 },
+
+  // ── LOWER ROOMS — doors open onto lower corridor (y:66) ──
+  "17": { x:96, y:34 }, "18": { x:96, y:42 }, "19": { x:96, y:50 },
+
+  // ── VERTICAL CENTER CONNECTOR ──
+  "10": { x:35, y:50 },"11a":{ x:40, y:50 },
+
+  // ── BOTTOM ROOMS — doors open onto bottom corridor (y:82) ──
+  "23": { x:34, y:82 }, "24": { x:40, y:82 },
+  "25": { x:53, y:82 }, "26": { x:59, y:82 }, "27": { x:64, y:82 },
+  "28": { x:70, y:82 }, "29": { x:76, y:82 }, "30": { x:81, y:82 },
+
+  // ── SPECIAL ROOMS — doors face nearest corridor ──
+  "theatre":          { x:22, y:50 },
+  "meeting":          { x:74, y:34 },
+  "study":            { x:74, y:66 },
+  "dining":           { x:22, y:84 },
+  "medkit":           { x:88, y:16 },
+  "fireextinguisher": { x:8,  y:88 },
+};
+
+  // Adjacent nodes for fire spread simulation
+  const NODE_ADJACENCY = {
+  // ── TOP HORIZONTAL CORRIDOR ──
+  "CJ_TL": ["1",  "CJ_TM", "CJ_ML"],
+  "1":  ["CJ_TL","2"],  "2":  ["1","3"],   "3":  ["2","4"],  "4":  ["3","CJ_TM"],
+  "CJ_TM": ["4","11","CJ_TL","CJ_TR"],
+  "11": ["CJ_TM","12"], "12": ["11","13"], "13": ["12","14"], "14": ["13","15"], "15": ["14","CJ_TR"],
+  "CJ_TR": ["15","medkit","CJ_MR"],
+  "medkit": ["CJ_TR"],
+
+  // ── LEFT VERTICAL CORRIDOR ──
+  "CJ_ML": ["CJ_TL","CJ_LL","5","theatre"],
+  "theatre": ["CJ_ML"],
+  "CJ_LL": ["CJ_ML","CJ_BL","dining"],
+  "dining":  ["CJ_LL","CJ_BL"],
+
+  // ── MIDDLE HORIZONTAL CORRIDOR ──
+  "5":  ["CJ_ML","6"], "6": ["5","7"], "7": ["6","8"], "8": ["7","9"], "9": ["8","CJ_MC"],
+  "CJ_MC": ["9","33","CJ_ML","CJ_MR","10"],
+  "33": ["CJ_MC","34"], "34": ["33","meeting"],
+  "meeting": ["34","CJ_MR"],
+  "CJ_MR": ["CJ_TR","CJ_LR","meeting"],
+
+  // ── CENTER VERTICAL CONNECTOR ──
+  "10": ["CJ_MC","CJ_LC"],
+
+  // ── LOWER HORIZONTAL CORRIDOR ──
+  "CJ_LC": ["10","17","CJ_LL","CJ_LR"],
+  "17": ["CJ_LC","18"], "18": ["17","19"], "19": ["18","study"],
+  "study": ["19","CJ_LR"],
+  "CJ_LR": ["CJ_MR","CJ_BR","study"],
+
+  // ── BOTTOM HORIZONTAL CORRIDOR ──
+  "CJ_BL": ["CJ_LL","23","CJ_BC","dining","fireextinguisher"],
+  "fireextinguisher": ["CJ_BL"],
+  "23": ["CJ_BL","24"], "24": ["23","CJ_BC"],
+  "CJ_BC": ["24","25","CJ_BL","CJ_BR"],
+  "25": ["CJ_BC","26"], "26": ["25","27"], "27": ["26","28"],
+  "28": ["27","29"], "29": ["28","30"], "30": ["29","CJ_BR"],
+  "CJ_BR": ["30","CJ_LR","CJ_BC"],
+};
+
+  let incidentData  = null;
+  let incidentStart = null;
+  let allUsers      = [];
+  let activeFireNodes = [];
+  let selectedSimNode = null;
+  let timerInterval   = null;
+
+  // ── Populate node buttons in sim panel ──
+  const nodeGrid = document.getElementById('sim-node-grid');
+  Object.keys(NODE_POSITIONS).forEach(n => {
+    const btn = document.createElement('button');
+    btn.className = 'sim-node-btn';
+    btn.textContent = n;
+    btn.onclick = () => selectSimNode(n);
+    nodeGrid.appendChild(btn);
+  });
+
+  async function simStop() {
+    simulationRunning = false;
+  const btn = document.getElementById('btn-stop-sim');
+  btn.disabled = true;
+
+  setSimStatus('Stopping simulation and clearing logs…', '');
+
+  await showSimProgress(6);
+
+  try {
+    // 1. Reset all users to idle
+    await Promise.allSettled(
+      allUsers.map(u => apiPost('/api/user-status', {
+        userId: u._id,
+        status: 'idle'
+      }))
+    );
+
+    // 2. OPTIONAL: Clear logs from backend (if API exists)
+    try {
+      await apiPost('/api/clear-logs', {}); // create this route if needed
+    } catch (e) {
+      console.warn("No clear-logs API, clearing only UI");
+    }
+
+    // 3. Reset frontend state
+    activeFireNodes = [];
+    incidentData = null;
+    fireRadius = 15;
+
+    // 4. Clear UI elements
+    renderFireZones();
+    document.getElementById('alert-list').innerHTML =
+      '<div class="empty-state">No logs — simulation stopped</div>';
+
+    // 5. Reset header
+    document.getElementById('incident-type').textContent = '— None';
+    document.getElementById('incident-timer').textContent = '--:--';
+
+    // 6. Stop timer
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+
+    // 7. Reset buttons
+    document.getElementById('btn-trigger-fire').disabled = false;
+    document.getElementById('btn-spread-fire').disabled = true;
+    document.getElementById('btn-chaos').disabled = true;
+
+    setSimStatus('✔ Simulation stopped & logs cleared', 'ok');
+
+    await refresh();
+    await apiPost('/api/stop-simulation', {});
+
+  } catch (e) {
+    setSimStatus('✗ Failed to stop simulation', 'err');
+  }
+
+  btn.disabled = false;
+}
+  function selectSimNode(node) {
+    selectedSimNode = node;
+    document.querySelectorAll('.sim-node-btn').forEach(b => {
+      b.classList.toggle('selected', b.textContent === node);
+    });
+    setSimStatus(`Node ${node} selected as fire origin`, '');
+  }
+
+  function openSimPanel()  { document.getElementById('sim-overlay').classList.add('open'); }
+  function closeSimPanel() { document.getElementById('sim-overlay').classList.remove('open'); }
+
+  function setSimStatus(msg, type) {
+    const el = document.getElementById('sim-status');
+    el.textContent = msg;
+    el.className = 'sim-status ' + (type || '');
+  }
+
+  async function showSimProgress(steps) {
+    const bar  = document.getElementById('sim-progress-bar');
+    const fill = document.getElementById('sim-progress-fill');
+    bar.style.display = 'block';
+    for (let i = 0; i <= steps; i++) {
+      fill.style.width = (i / steps * 100) + '%';
+      await delay(120);
+    }
+    setTimeout(() => { bar.style.display = 'none'; fill.style.width = '0%'; }, 600);
+  }
+
+  // ── SIMULATION: Trigger Fire ──
+  async function simTriggerFire() {
+  if (!selectedSimNode) { setSimStatus('⚠ Select a node first', 'err'); return; }
+  const btn = document.getElementById('btn-trigger-fire');
+  btn.disabled = true;
+  setSimStatus('Triggering fire at node ' + selectedSimNode + '…', '');
+  await showSimProgress(5);
+  try {
+    await apiPost('/api/fire', { node: selectedSimNode });
+    activeFireNodes = [selectedSimNode];
+    incidentData = { type: 'fire', node: selectedSimNode, blockedNodes: [selectedSimNode] };
+    if (!incidentStart) { incidentStart = new Date(); startIncidentTimer(incidentStart); }
+    renderFireZones();
+
+    // 1. Mark danger zones
+    await updateGuestStatusByFire();
+    await refresh();
+
+    // 2. Compute ONE meeting point and log it
+    const meetingPoint = getFarthestNodeFromFire();
+    await logAction(`📍 Meeting point selected: Node ${meetingPoint}`);
+
+    // 3. Run evacuation (green guests) and rescue (red guests) sequentially
+    await Promise.all([runEvacuation(meetingPoint), runRescue(meetingPoint)]);
+
+    simulationRunning = true;
+    setSimStatus('✔ Fire triggered at node ' + selectedSimNode, 'ok');
+    document.getElementById('btn-spread-fire').disabled = false;
+    document.getElementById('btn-chaos').disabled = false;
+    await refresh();
+  } catch (e) {
+    setSimStatus('✗ Failed: ' + e.message, 'err');
+    btn.disabled = false;
+  }
+}
+
+  // ── SIMULATION: Spread Fire ──
+  async function simSpreadFire() {
+    if (!activeFireNodes.length) return;
+    const btn = document.getElementById('btn-spread-fire');
+    btn.disabled = true;
+    // Collect adjacent nodes not already on fire
+    const newNodes = new Set();
+    activeFireNodes.forEach(n => {
+      (NODE_ADJACENCY[n] || []).forEach(adj => {
+        if (!activeFireNodes.includes(adj)) newNodes.add(adj);
+      });
+    });
+    const spreadTo = [...newNodes].slice(0, 3); // spread to max 3 at a time
+    if (!spreadTo.length) { setSimStatus('Fire has nowhere left to spread', ''); return; }
+    activeFireNodes = [...activeFireNodes, ...spreadTo];
+    setSimStatus('Spreading fire to: ' + spreadTo.join(', ') + '…', '');
+    await showSimProgress(spreadTo.length + 2);
+    try {
+      await apiPost('/api/fire-update', { blockedNodes: activeFireNodes });
+      if (incidentData) incidentData.blockedNodes = activeFireNodes;
+      renderFireZones();
+      fireRadius += 5; // increase danger zone
+await updateGuestStatusByFire();
+
+// Re‑compute meeting point (fire may have spread)
+const newMeetingPoint = getFarthestNodeFromFire();
+await logAction(`📍 Fire spread – new meeting point: Node ${newMeetingPoint}`);
+
+// Evacuate safe guests again, then rescue help guests
+await runEvacuation(newMeetingPoint);
+await runRescue(newMeetingPoint);
+      setSimStatus('✔ Fire spread to ' + spreadTo.join(', '), 'ok');
+      btn.disabled = false;
+      await refresh();
+    } catch(e) {
+      setSimStatus('✗ Spread failed: ' + e.message, 'err');
+      btn.disabled = false;
+    }
+  }
+
+  // ── SIMULATION: Chaos — randomize guest statuses ──
+  async function simChaos() {
+    const btn = document.getElementById('btn-chaos');
+    btn.disabled = true;
+    const guests = allUsers.filter(u => u.type === 'guest');
+    if (!guests.length) { setSimStatus('No guests in DB to simulate', 'err'); btn.disabled=false; return; }
+
+    setSimStatus('Simulating panic across ' + guests.length + ' guests…', '');
+    await showSimProgress(guests.length);
+
+    const statuses = ['help','help','moving','moving','safe','idle'];
+    const updates  = guests.map(g => ({
+      userId: g._id,
+      status: statuses[Math.floor(Math.random() * statuses.length)]
+    }));
+
+    // Fire them in parallel batches of 5
+    for (let i = 0; i < updates.length; i += 5) {
+      const batch = updates.slice(i, i+5);
+      await Promise.allSettled(batch.map(u => apiPost('/api/user-status', u)));
+      await delay(50);
+    }
+
+    setSimStatus('✔ Guest statuses randomised (' + guests.length + ' updated)', 'ok');
+    btn.disabled = false;
+    await refresh();
+  }
+
+  // ── SIMULATION: Reset all users to idle ──
+  async function simReset() {
+    const btn = document.getElementById('btn-reset-sim');
+    btn.disabled = true;
+    setSimStatus('Resetting all users to idle…', '');
+    await showSimProgress(allUsers.length + 2);
+    try {
+      await Promise.allSettled(
+        allUsers.map(u => apiPost('/api/user-status', { userId:u._id, status:'idle' }))
+      );
+      activeFireNodes = [];
+      incidentData    = null;
+      renderFireZones();
+      document.getElementById('incident-type').textContent = '— None';
+      document.getElementById('incident-timer').textContent = '--:--';
+      document.getElementById('btn-trigger-fire').disabled  = false;
+      document.getElementById('btn-spread-fire').disabled   = true;
+      document.getElementById('btn-chaos').disabled         = true;
+      setSimStatus('✔ All users reset to idle', 'ok');
+      btn.disabled = false;
+      await refresh();
+    } catch(e) {
+      setSimStatus('✗ Reset failed: ' + e.message, 'err');
+      btn.disabled = false;
+    }
+  }
+
+  // ── Render fire zone overlays on map ──
+  function renderFireZones() {
+    const layer = document.getElementById('map-fire-layer');
+    layer.innerHTML = '';
+    activeFireNodes.forEach(node => {
+      const pos = NODE_POSITIONS[node];
+      if (!pos) return;
+      const zone = document.createElement('div');
+      zone.className = 'fire-zone';
+      zone.style.left   = pos.x + '%';
+      zone.style.top    = pos.y + '%';
+      zone.style.width  = '60px';
+      zone.style.height = '60px';
+      zone.title = '🔥 Fire at node ' + node;
+      layer.appendChild(zone);
+    });
+  }
+
+  // ── API helpers ──
+  async function apiFetch(path) {
+    const res = await fetch(API_BASE + path);
+    if (!res.ok) throw new Error(`${path} → ${res.status}`);
+    return res.json();
+  }
+  async function apiPost(path, body) {
+    const res = await fetch(API_BASE + path, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error(`POST ${path} → ${res.status}`);
+    return res.json();
+  }
+  const delay = ms => new Promise(r => setTimeout(r, ms));
+
+  // ── Render functions ──
+  function renderStats(users) {
+    const guests = users.filter(u => u.type === 'guest');
+    const safe   = guests.filter(u => u.status === 'safe').length;
+    const help   = guests.filter(u => u.status === 'help').length;
+    const total  = guests.length;
+    const pct    = total ? Math.round(safe/total*100) : 0;
+    document.getElementById('stat-safe-count').textContent = `${safe} / ${total}`;
+    document.getElementById('stat-safe-sub').textContent   = `${pct}% evacuated`;
+    document.getElementById('stat-help-count').textContent = `${help} Person${help!==1?'s':''}`;
+    if (incidentData) {
+      const bn = incidentData.blockedNodes || [];
+      document.getElementById('stat-blocked').textContent     = `${bn.length} Node${bn.length!==1?'s':''}`;
+      document.getElementById('stat-blocked-sub').textContent = bn.length ? bn.join(', ') : 'None';
+      document.getElementById('incident-type').textContent    = '🔴 Fire';
+    } else {
+      document.getElementById('stat-blocked').textContent  = '—';
+    }
+    document.getElementById('assembly-count').textContent    = `${safe} SAFE`;
+    document.getElementById('assembly-progress').style.width = pct + '%';
+    document.getElementById('assembly-pct').textContent      = pct + '%';
+    document.getElementById('assembly-frac').textContent     = `${safe} of ${total}`;
+  }
+
+  function renderStuckGuests(users) {
+    const help = users.filter(u => u.type==='guest' && u.status==='help');
+    const el   = document.getElementById('stuck-guests-list');
+    el.innerHTML = !help.length
+      ? '<li class="empty-state">No guests need help right now ✓</li>'
+      : help.map((u,i) => `
+          <li class="guest-row" style="animation-delay:${i*.1}s">
+            <span class="guest-room">${u.node||'?'}</span>
+            <span class="guest-name">${u.name}</span>
+            <span class="badge badge-danger">STUCK</span>
+            <button class="btn-rescue" onclick="sendRescue('${u._id}','${u.node}','${u.name}',this)">Send Rescue</button>
+          </li>`).join('');
+  }
+
+  function renderStaff(users) {
+    const staff = users.filter(u => u.type==='staff');
+    const el    = document.getElementById('staff-list');
+    if (!staff.length) { el.innerHTML = '<div class="empty-state">No staff registered</div>'; return; }
+    const ac = s => s==='moving'?'avatar-blue':s==='help'?'avatar-red':s==='safe'?'avatar-green':'avatar-amber';
+    const sb = s => { const m={safe:'badge-success',moving:'badge-info',help:'badge-danger',idle:'badge-idle'}; return `<span class="badge ${m[s]||'badge-idle'}">${s.toUpperCase()}</span>`; };
+    el.innerHTML = staff.map(u => `
+      <div class="staff-row">
+        <div class="avatar ${ac(u.status)}">${u.name.slice(0,2).toUpperCase()}</div>
+        <div class="staff-info">
+          <div class="staff-name">${u.name}</div>
+          <div class="staff-task"><span class="gps-dot"></span>${u.role||'Staff'} — Node ${u.node||'?'}${u.assignedTo?` → ${u.assignedTo}`:''}</div>
+        </div>
+        ${sb(u.status)}
+      </div>`).join('');
+  }
+
+  function renderGuestList(users) {
+    const guests = users.filter(u => u.type==='guest');
+    const el     = document.getElementById('guest-full-list');
+    if (!guests.length) { el.innerHTML = '<div class="empty-state">No guests registered</div>'; return; }
+    const bm = {safe:'badge-success',help:'badge-danger',moving:'badge-info',idle:'badge-idle'};
+    el.innerHTML = guests.map(u => `
+      <div class="priority-row">
+        <div class="priority-info">
+          <div class="priority-name">${u.name}</div>
+          <div class="priority-meta">Node ${u.node||'?'} · ${u.phone}</div>
+        </div>
+        <span class="badge ${bm[u.status]||'badge-idle'}">${u.status.toUpperCase()}</span>
+      </div>`).join('');
+  }
+
+  function renderMapDots(users) {
+    const layer = document.getElementById('map-dots-layer');
+    layer.innerHTML = '';
+    const byNode = {};
+    users.forEach(u => { if(u.node) (byNode[u.node]=byNode[u.node]||[]).push(u); });
+    Object.entries(byNode).forEach(([node, nodeUsers]) => {
+      const pos = NODE_POSITIONS[node];
+      if (!pos) return;
+      nodeUsers.forEach((u, idx) => {
+        const sc = u.status==='help'?'dot-help':u.status==='safe'?'dot-safe':u.status==='moving'?'dot-moving':'dot-idle';
+        const tc = u.type==='staff'?'dot-staff':'';
+        // Add a staff role indicator (emojis + colored rings)
+let staffIcon = '';
+let ringColor = '';
+if (u.type === 'staff') {
+  if (u.role === 'rescue') {
+    staffIcon = '🚑 ';
+    ringColor = '2px solid #ff4d4d';
+  } else if (u.role === 'evac') {
+    staffIcon = '🚶 ';
+    ringColor = '2px solid #22c55e';
+  }
+}
+       const angle = (idx / nodeUsers.length) * 2 * Math.PI;
+const radius = 12;
+
+const ox = Math.cos(angle) * radius;
+const oy = Math.sin(angle) * radius;
+        const dot = document.createElement('div');
+        dot.className = `map-dot ${sc} ${tc}`;
+        dot.style.left = `calc(${pos.x}% + ${ox}px)`;
+        dot.style.top  = `calc(${pos.y}% + ${oy}px)`;
+        dot.style.pointerEvents = 'auto';
+       dot.innerHTML = `<div class="map-dot-inner" style="${ringColor ? 'border:'+ringColor+'; box-shadow:none;' : ''}"></div>
+                 <div class="map-dot-label">${staffIcon}${u.name} [${u.status}]</div>`;
+        layer.appendChild(dot);
+      });
+    });
+  }
+let simulationRunning = false;
+
+async function simulationLoop() {
+  if (!simulationRunning) return;
+  try {
+    await updateGuestStatusByFire();
+    await refresh();
+  } catch (e) {
+    console.error("Simulation loop error:", e);
+  }
+  setTimeout(simulationLoop, 5000);
+}
+
+  function renderLogs(logs) {
+    const el = document.getElementById('alert-list');
+    if (!logs.length) { el.innerHTML = '<div class="empty-state">No logs yet</div>'; return; }
+    const recent = [...logs].reverse().slice(0,6);
+    el.innerHTML = recent.map(log => {
+      const msg  = log.message||'';
+      const type = msg.toLowerCase().includes('fire')?'danger':msg.toLowerCase().includes('update')||msg.toLowerCase().includes('spread')?'warning':'info';
+      const lbl  = type==='danger'?'ALERT':type==='warning'?'UPDATE':'INFO';
+      const cm   = {danger:'var(--danger)',warning:'var(--warning)',info:'var(--info)'};
+      const time = new Date(log.timestamp).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+      return `<div class="alert-row al-${type}">
+        <div class="alert-icon-circle" style="color:${cm[type]};background:${cm[type]}"></div>
+        <div class="alert-content">
+          <div class="alert-head"><span class="alert-label" style="color:${cm[type]}">${lbl}</span><span class="alert-time-stamp">${time}</span></div>
+          <div class="alert-txt">${msg}</div>
+        </div></div>`;
+    }).join('');
+  }
+
+  async function handleRescue() {
+  const meetingPoint = getFarthestNodeFromFire();
+  const safeGraph = getSafeGraph(activeFireNodes);
+
+  const rescueStaff = allUsers.filter(u => u.type === 'staff');
+  const helpGuests  = allUsers.filter(u => u.status === 'help');
+
+  for (let i = 0; i < helpGuests.length; i++) {
+    const staff = rescueStaff[i % rescueStaff.length];
+    const guest = helpGuests[i];
+
+    // 1. Staff → Guest
+    const path1 = shortestPath(safeGraph, staff.node, guest.node);
+    if (!path1) continue;
+
+    await animateMovement(staff, path1);
+
+    logAction(`${staff.name} reached ${guest.name}`);
+
+    // 2. Guest → Meeting Point
+    const path2 = shortestPath(safeGraph, guest.node, meetingPoint);
+    if (!path2) continue;
+
+    await animateMovement(guest, path2);
+    await animateMovement(staff, path2);
+
+    logAction(`${guest.name} rescued to ${meetingPoint}`);
+  }
+ 
+}
+async function logAction(msg) {
+  await apiPost('/api/log', {
+    message: msg,
+    timestamp: new Date()
+  });
+    await refresh();
+}
+
+  async function refresh() {
+    try {
+      const [users, logs] = await Promise.all([apiFetch('/api/users'), apiFetch('/api/logs')]);
+      allUsers = users;
+      renderStats(users);
+      renderStuckGuests(users);
+      renderStaff(users);
+      renderGuestList(users);
+      renderMapDots(users);
+      renderLogs(logs);
+      flashFooter();
+    
+    } catch(e) { console.error('[SENTINEL]', e.message); }
+  }
+function getFarthestNodeFromFire() {
+  // Only these four nodes are allowed as meeting points
+  const CANDIDATE_NODES = ["meeting", "study", "theatre", "dining"];
+
+  let maxDist = -1;
+  let bestNode = null;
+
+  for (let node of CANDIDATE_NODES) {
+    // If node is currently on fire, skip it (cannot be meeting point)
+    if (activeFireNodes.includes(node)) continue;
+    if (!NODE_POSITIONS[node]) continue;
+
+    // Find the distance to the closest fire node
+    let minFireDist = Infinity;
+    for (let f of activeFireNodes) {
+      const d = getDistance(node, f);
+      if (d < minFireDist) minFireDist = d;
+    }
+
+    // If no active fire, distance is effectively infinite – pick first valid candidate
+    if (activeFireNodes.length === 0) {
+      bestNode = node;
+      break;
+    }
+
+    // Farthest = maximum of the minimum distances to any fire
+    if (minFireDist > maxDist) {
+      maxDist = minFireDist;
+      bestNode = node;
+    }
+  }
+
+  // Fallback in case all four are on fire (very unlikely)
+  if (!bestNode && CANDIDATE_NODES.length) {
+    bestNode = CANDIDATE_NODES.find(n => !activeFireNodes.includes(n)) || CANDIDATE_NODES[0];
+  }
+
+  console.log(`🔥 Meeting point selected: ${bestNode} (farthest from fire)`);
+  return bestNode;
+}
+async function runEvacuation(meetingPoint) {
+  const safeGraph = getSafeGraph(activeFireNodes);
+  // Use evacuation staff only (role 'evac') – same as rescue uses 'rescue' staff
+  const evacStaff = allUsers.filter(u => u.type === 'staff' && u.role === 'evac');
+  const safeGuests = allUsers.filter(u => u.type === 'guest' && u.status === 'safe');
+
+  if (!safeGuests.length) {
+    await logAction(`🟢 No safe guests to evacuate.`);
+    return;
+  }
+
+  if (!evacStaff.length) {
+    await logAction(`⚠️ No evacuation staff available – safe guests will self-evacuate.`);
+    // Fallback: move safe guests directly (original behaviour)
+    for (let guest of safeGuests) {
+      const path = shortestPath(safeGraph, guest.node, meetingPoint);
+      if (path) {
+        await animateMovement(guest, path, meetingPoint);
+        await logAction(`✅ ${guest.name} self-evacuated to Node ${meetingPoint}`);
+      }
+    }
+    return;
+  }
+
+  await logAction(`🟢 Evacuating ${safeGuests.length} safe guest(s) to Node ${meetingPoint} with staff escort (same fashion as rescue)`);
+
+  // Process each safe guest – assign an evacuation staff member (round‑robin)
+  for (let i = 0; i < safeGuests.length; i++) {
+    const guest = safeGuests[i];
+    const staff = evacStaff[i % evacStaff.length];
+
+    // Step 1: Staff walks to the guest's current node
+    const pathToGuest = shortestPath(safeGraph, staff.node, guest.node);
+    if (!pathToGuest) {
+      await logAction(`❌ No path for ${staff.name} to reach ${guest.name} at node ${guest.node}`);
+      continue;
+    }
+
+    await logAction(`🚶 ${staff.name} heading to ${guest.name} (Node ${guest.node})`);
+    await animateMovement(staff, pathToGuest, guest.node); // staff arrives at guest
+
+    // Step 2: Guest changes status to "moving" once staff arrives
+    await apiPost('/api/user-status', { userId: guest._id, status: 'moving' });
+    await refresh();
+
+    // Step 3: Both staff and guest move together to the meeting point
+    const pathToMeeting = shortestPath(safeGraph, guest.node, meetingPoint);
+    if (!pathToMeeting) {
+      await logAction(`❌ No safe path from ${guest.node} to meeting point ${meetingPoint}`);
+      continue;
+    }
+
+    await logAction(`👥 ${staff.name} escorting ${guest.name} to Node ${meetingPoint}`);
+    await Promise.all([
+      animateMovement(staff, pathToMeeting, meetingPoint),
+      animateMovement(guest, pathToMeeting, meetingPoint)
+    ]);
+
+    // Mark both as safe at the meeting point
+    await apiPost('/api/user-status', { userId: guest._id, status: 'safe', node: meetingPoint });
+    await apiPost('/api/user-status', { userId: staff._id, status: 'safe', node: meetingPoint });
+    await logAction(`✅ ${guest.name} evacuated (green) and reached Node ${meetingPoint} with ${staff.name}`);
+  }
+}
+
+async function runRescue(meetingPoint) {
+  const safeGraph = getSafeGraph(activeFireNodes);
+  const rescueStaff = allUsers.filter(u => u.type === 'staff' && u.role === 'rescue');
+  const helpGuests = allUsers.filter(u => u.type === 'guest' && u.status === 'help');
+
+  if (!helpGuests.length || !rescueStaff.length) return;
+
+  await logAction(`🔴 Rescue needed for ${helpGuests.length} guest(s)`);
+
+  for (let i = 0; i < helpGuests.length; i++) {
+    const staff = rescueStaff[i % rescueStaff.length];
+    const guest = helpGuests[i];
+ 
+    // Step 1: Staff walks to guest
+    const rescueGraph = GRAPH;
+    const toGuest = shortestPath(GRAPH, staff.node, guest.node, true);
+if (!toGuest) {
+  await logAction(`❌ No path for ${staff.name} to reach ${guest.name}`);
+  continue;
+}
+    await logAction(`🚑 ${staff.name} heading to ${guest.name} at Node ${guest.node}`);
+    await animateMovement(staff, toGuest, guest.node); // staff moves, ends at guest node
+
+    // Step 2: Update guest to "moving" now that staff arrived
+    await apiPost('/api/user-status', { userId: guest._id, status: 'moving' });
+    await refresh();
+
+    // Step 3: Both staff + guest walk to meeting point together
+    
+    const toMeeting = shortestPath(safeGraph, guest.node, meetingPoint, true);
+if (!toMeeting) {
+  await logAction(`❌ No path from ${guest.node} to meeting point`);
+  continue;
+}
+    await logAction(`🚑 ${staff.name} escorting ${guest.name} to Node ${meetingPoint}`);
+    await Promise.all([
+      animateMovement(staff, toMeeting, meetingPoint),
+      animateMovement(guest, toMeeting, meetingPoint)
+    ]);
+
+    await logAction(`✅ ${guest.name} rescued and reached Node ${meetingPoint}`);
+  }
+}
+
+  //djkstra 
+const GRAPH = NODE_ADJACENCY;
+
+function getSafeGraph(blockedNodes) {
+  const g = {};
+
+  Object.keys(GRAPH).forEach(node => {
+    if (!blockedNodes.includes(node)) {
+      g[node] = GRAPH[node].filter(n => !blockedNodes.includes(n));
+    }
+  });
+
+  return g;
+}
+
+function shortestPath(graph, start, end, allowStartBlocked = false) {
+  if (!graph[start] && !allowStartBlocked) {
+    logAction(`❌ Invalid path: ${start} → ${end}`);
+    return null;
+  }
+
+  // Work on a copy of the graph
+  let workingGraph = { ...graph };
+
+  // If start is blocked but we are allowed to start from it, add it back
+  if (allowStartBlocked && !workingGraph[start]) {
+    workingGraph[start] = (NODE_ADJACENCY[start] || []).filter(n => !activeFireNodes.includes(n));
+    // If still no neighbours, cannot move
+    if (workingGraph[start].length === 0) return null;
+  }
+
+  if (!workingGraph[end]) return null;
+
+  const dist = {};
+  const prev = {};
+  const visited = new Set();
+
+  Object.keys(workingGraph).forEach(n => dist[n] = Infinity);
+  dist[start] = 0;
+
+  while (true) {
+    let u = null;
+    let min = Infinity;
+    for (let node in dist) {
+      if (!visited.has(node) && dist[node] < min) {
+        min = dist[node];
+        u = node;
+      }
+    }
+    if (u === null) break;
+    if (u === end) break;
+    visited.add(u);
+    for (let v of workingGraph[u] || []) {
+      let alt = dist[u] + 1;
+      if (alt < dist[v]) {
+        dist[v] = alt;
+        prev[v] = u;
+      }
+    }
+  }
+
+  if (!prev[end] && start !== end) {
+    logAction(`❌ No path from ${start} to ${end}`);
+    return null;
+  }
+
+  let path = [];
+  let cur = end;
+  while (cur) {
+    path.unshift(cur);
+    cur = prev[cur];
+  }
+  logAction(`🧭 Path from ${start} → ${end}: ${path.join(' → ')}`);
+  return path;
+}
+
+
+async function animateMovement(user, path, finalNode) {
+  for (let i = 0; i < path.length; i++) {
+    await apiPost('/api/user-status', {
+      userId: user._id,
+      node: path[i],
+      status: 'moving'
+    });
+    await refresh();
+    await delay(800);
+  }
+  // Mark safe only if they reached the meeting point
+  await apiPost('/api/user-status', {
+    userId: user._id,
+    node: finalNode || path[path.length - 1],
+    status: 'safe'
+  });
+  await refresh();
+}
+
+async function evacuateSafeGuests() {
+  const meetingPoint = getFarthestNodeFromFire();
+  const safeGraph = getSafeGraph(activeFireNodes);
+
+  const safeGuests = allUsers.filter(u => 
+    u.type === 'guest' && u.status === 'safe'
+  );
+
+  for (let g of safeGuests) {
+    const path = shortestPath(safeGraph, g.node, meetingPoint);
+    if (path) await animateMovement(g, path);
+
+    logAction(`${g.name} evacuating to ${meetingPoint}`);
+  }
+}
+async function sendRescue(userId, node, name, btn) {
+  btn.disabled = true;
+  btn.textContent = 'Dispatching…';
+
+  try {
+    const staff = allUsers.find(u => u.type === 'staff');
+    const guest = allUsers.find(u => u._id === userId);
+
+    if (!staff || !guest) throw new Error('No staff/guest');
+
+    const safeGraph = getSafeGraph(activeFireNodes);
+    const path = shortestPath(safeGraph, staff.node, guest.node);
+
+    await animateMovement(staff, path);
+
+    await apiPost('/api/user-status', {
+      userId,
+      status: 'moving'
+    });
+
+    btn.textContent = 'Dispatched ✓';
+    btn.style.borderColor = 'var(--success)';
+    btn.style.color = 'var(--success)';
+
+    setTimeout(refresh, 500);
+  } catch (e) {
+    btn.textContent = 'Failed';
+    btn.disabled = false;
+  }
+}
+  async function sendWhatsApp(event) {
+    const btn = event.currentTarget;
+    const circle = document.createElement('span');
+    const d=Math.max(btn.clientWidth,btn.clientHeight), r=d/2;
+    const rect=btn.getBoundingClientRect();
+    circle.style.cssText=`width:${d}px;height:${d}px;left:${event.clientX-rect.left-r}px;top:${event.clientY-rect.top-r}px`;
+    circle.className='ripple'; btn.querySelector('.ripple')?.remove(); btn.appendChild(circle);
+    try {
+      const node = incidentData?.node || 'UNKNOWN';
+      await apiPost('/api/fire', {node});
+      document.getElementById('whatsapp-success').style.display='block';
+      setTimeout(()=>{ document.getElementById('whatsapp-success').style.display='none'; },4000);
+      setTimeout(refresh,500);
+    } catch(e) {
+      const el=document.getElementById('whatsapp-success');
+      el.textContent='✗ Send failed. Check backend.'; el.style.color='var(--danger)'; el.style.display='block';
+    }
+  }
+
+  function startIncidentTimer(startDate) {
+    if (timerInterval) clearInterval(timerInterval);
+    const el = document.getElementById('incident-timer');
+    function tick() {
+      const s = Math.floor((Date.now()-new Date(startDate).getTime())/1000);
+      el.textContent = String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+    }
+    tick(); timerInterval = setInterval(tick,1000);
+  }
+
+  (function initFooterClock() {
+    const el = document.getElementById('footer-time');
+    setInterval(()=>{ el.textContent=new Date().toLocaleTimeString('en-GB'); },1000);
+  })();
+
+  function flashFooter() {
+    const el=document.getElementById('footer-timestamp');
+    el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+  }
+
+  async function loadIncident() {
+    try {
+      const logs = await apiFetch('/api/logs');
+      const fireLog = [...logs].reverse().find(l=>l.message&&l.message.toLowerCase().includes('fire detected'));
+      if (fireLog) {
+        const match = fireLog.message.match(/node\s+(\S+)/i);
+        const node  = match ? match[1] : '?';
+        incidentData  = { type:'fire', node, blockedNodes:[node] };
+        incidentStart = fireLog.timestamp;
+        activeFireNodes = [node];
+        renderFireZones();
+        startIncidentTimer(incidentStart);
+        // Unlock spread + chaos buttons since incident exists
+        document.getElementById('btn-spread-fire').disabled = false;
+        document.getElementById('btn-chaos').disabled       = false;
+      }
+    } catch(e) {}
+  }
+
+  (async function init() {
+    await loadIncident();
+    await refresh();
+    setInterval(refresh, 5000);
+  })();
+</script>
+</body>
+</html>

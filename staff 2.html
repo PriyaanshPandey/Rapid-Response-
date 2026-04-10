@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Staff-2 Evacuation Command — Emergency Command Center POV for Evacuation Staff." />
+  <title>Staff‑2 View — Evacuation Command</title>
+
+  <style>
+    /* ============================================================
+       CSS VARIABLES — Shared with dashboard.html
+       ============================================================ */
+    :root {
+      --danger:      #ff4d4d;
+      --success:     #22c55e;
+      --warning:     #f59e0b;
+      --info:        #38bdf8;
+      --bg-primary:  #0d0d0d;
+      --bg-card:     #161616;
+      --border:      #2a2a2a;
+      --text-white:  #ffffff;
+      --text-gray:   #9ca3af;
+      --text-muted:  #6b7280;
+      --radius:      8px;
+      --padding:     14px;
+    }
+
+    /* ============================================================
+       RESET & BASE
+       ============================================================ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background-color: var(--bg-primary);
+      color: var(--text-white);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      overflow: hidden;
+    }
+
+    /* ============================================================
+       ANIMATIONS
+       ============================================================ */
+    @keyframes blink-green {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    @keyframes pulse-border-green {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+      50% { box-shadow: 0 0 10px rgba(34,197,94,0.4); }
+    }
+    @keyframes fade-in-up {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes progress-shimmer {
+      0%   { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    @keyframes gathered-glow {
+      0%, 100% { text-shadow: none; }
+      50% { text-shadow: 0 0 14px rgba(34,197,94,0.45); }
+    }
+
+    /* ============================================================
+       PAGE LAYOUT
+       ============================================================ */
+    .page-wrapper {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Top header bar */
+    .pov-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 20px;
+      flex-shrink: 0;
+    }
+
+    .pov-header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .pov-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: rgba(34,197,94,0.1);
+      color: var(--success);
+      border: 1px solid rgba(34,197,94,0.35);
+      animation: pulse-border-green 2.5s infinite;
+    }
+
+    .pov-badge-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--success);
+      animation: blink-green 1.2s infinite;
+    }
+
+    .pov-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text-white);
+      letter-spacing: -0.01em;
+    }
+
+    .pov-subtitle {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .btn-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 16px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.03);
+      color: var(--text-gray);
+      font-size: 12px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.2s, border-color 0.2s, color 0.2s;
+    }
+
+    .btn-back:hover {
+      background: rgba(255,255,255,0.07);
+      border-color: var(--text-gray);
+      color: var(--text-white);
+    }
+
+    .btn-back:focus {
+      outline: 2px solid var(--info);
+      outline-offset: 2px;
+    }
+
+    /* ============================================================
+       MAIN SPLIT — Map (70%) + Right Panel (30%)
+       ============================================================ */
+    .pov-body {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    /* LEFT — Live Map Area */
+    /* BACKEND: mount live evacuation overlay map inside #evac-map */
+    .evac-map-wrapper {
+      width: 60%;
+      flex-shrink: 0;
+      position: relative;
+      background: #0a0a0a;
+      border-right: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    #evac-map {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    .map-floor-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      background: #000;
+    }
+
+    /* Scanline overlay effect */
+    #evac-map::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent 0, transparent 4px,
+        rgba(255,255,255,0.018) 5px
+      );
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    /* Scanning beam animation */
+    #evac-map::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 30%;
+      background: linear-gradient(to bottom, transparent, rgba(34,197,94,0.06), transparent);
+      animation: scan-beam 6s linear infinite;
+      pointer-events: none;
+      z-index: 6;
+    }
+
+    @keyframes scan-beam {
+      from { transform: translateY(-100%); }
+      to   { transform: translateY(400%); }
+    }
+
+    /* Live chip */
+    .map-live-chip {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0,0,0,0.75);
+      border: 1px solid rgba(34,197,94,0.35);
+      border-radius: 4px;
+      padding: 5px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--success);
+      z-index: 20;
+      letter-spacing: 0.06em;
+    }
+
+    .map-live-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--success);
+      animation: blink-green 1.2s infinite;
+    }
+
+    /* Evacuation route placeholder hint */
+    .evac-route-hint {
+      position: absolute;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(34,197,94,0.06);
+      border: 1px dashed rgba(34,197,94,0.3);
+      border-radius: 6px;
+      padding: 10px 22px;
+      text-align: center;
+      color: rgba(34,197,94,0.55);
+      font-size: 12px;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    .map-backend-hint {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      padding: 12px 16px;
+      background: linear-gradient(to top, rgba(0,0,0,0.85), transparent);
+      font-size: 12px;
+      color: var(--text-muted);
+      z-index: 10;
+    }
+
+    /* RIGHT — Evacuation Instructions Panel */
+    .evac-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      background: var(--bg-primary);
+      padding: 14px;
+      gap: 12px;
+    }
+
+    .evac-panel::-webkit-scrollbar { width: 5px; }
+    .evac-panel::-webkit-scrollbar-track { background: var(--bg-primary); }
+    .evac-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    /* ============================================================
+       PANEL CARDS
+       ============================================================ */
+    .panel-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 13px 14px;
+      animation: fade-in-up 0.4s ease-out both;
+    }
+
+    .panel-card:nth-child(1) { animation-delay: 0.05s; }
+    .panel-card:nth-child(2) { animation-delay: 0.12s; }
+    .panel-card:nth-child(3) { animation-delay: 0.19s; }
+    .panel-card:nth-child(4) { animation-delay: 0.26s; }
+    .panel-card:nth-child(5) { animation-delay: 0.33s; }
+
+    .panel-card-title {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    /* Assignment */
+    .assignment-card {
+      border-left: 3px solid var(--success);
+    }
+
+    .assignment-text {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-white);
+      line-height: 1.4;
+    }
+
+    .assignment-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* ============================================================
+       EVACUATION PROGRESS — Large % Display
+       ============================================================ */
+    /* BACKEND: update #evac-progress text and progress bar width dynamically */
+    .evac-progress-num {
+      font-size: 48px;
+      font-weight: 900;
+      color: var(--success);
+      line-height: 1;
+      letter-spacing: -2px;
+      animation: gathered-glow 2.5s infinite;
+    }
+
+    .evac-progress-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--success);
+      opacity: 0.8;
+      margin-bottom: 10px;
+    }
+
+    .evac-progress-bar-track {
+      height: 10px;
+      background: var(--border);
+      border-radius: 5px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+
+    .evac-progress-bar-fill {
+      height: 100%;
+      border-radius: 5px;
+      width: 75%; /* BACKEND: set dynamically as (gathered/total)*100% */
+      background: linear-gradient(90deg, #16a34a, var(--success), #4ade80);
+      background-size: 200% 100%;
+      animation: progress-shimmer 2s linear infinite;
+    }
+
+    .evac-progress-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* Route list */
+    .route-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .route-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-white);
+    }
+
+    .route-bullet {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--success);
+      flex-shrink: 0;
+      margin-top: 6px;
+      box-shadow: 0 0 6px rgba(34,197,94,0.5);
+    }
+
+    /* Avoid list */
+    .avoid-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .avoid-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--danger);
+    }
+
+    .avoid-bullet {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--danger);
+      flex-shrink: 0;
+      margin-top: 6px;
+      box-shadow: 0 0 6px rgba(255,77,77,0.5);
+    }
+
+    /* Action Buttons */
+    .actions-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .action-btn {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: var(--radius);
+      border: 1px solid transparent;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.03em;
+      transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .action-btn:focus {
+      outline: 2px solid var(--info);
+      outline-offset: 2px;
+    }
+
+    .action-btn:active { transform: scale(0.97); }
+
+    .btn-cleared {
+      background: rgba(34,197,94,0.1);
+      border-color: rgba(34,197,94,0.35);
+      color: var(--success);
+    }
+    .btn-cleared:hover {
+      background: rgba(34,197,94,0.18);
+      box-shadow: 0 0 10px rgba(34,197,94,0.2);
+    }
+
+    .btn-moving {
+      background: rgba(56,189,248,0.1);
+      border-color: rgba(56,189,248,0.35);
+      color: var(--info);
+    }
+    .btn-moving:hover {
+      background: rgba(56,189,248,0.18);
+      box-shadow: 0 0 10px rgba(56,189,248,0.2);
+    }
+
+    .btn-support {
+      background: rgba(255,77,77,0.1);
+      border-color: rgba(255,77,77,0.35);
+      color: var(--danger);
+    }
+    .btn-support:hover {
+      background: rgba(255,77,77,0.18);
+      box-shadow: 0 0 10px rgba(255,77,77,0.2);
+    }
+  </style>
+</head>
+<body>
+<div class="page-wrapper">
+
+  <!-- ============================================================
+       PAGE HEADER
+       ============================================================ -->
+  <header class="pov-header">
+    <div class="pov-header-left">
+      <div class="pov-badge">
+        <span class="pov-badge-dot"></span>EVACUATION ACTIVE
+      </div>
+      <div>
+        <div class="pov-title">Staff‑2 View — Evacuation Command</div>
+        <div class="pov-subtitle">Evacuation Staff POV &nbsp;·&nbsp; Hotel Level 3</div>
+      </div>
+    </div>
+    <a href="dashboard.html" class="btn-back">
+      ← Back to Dashboard
+    </a>
+  </header>
+
+  <!-- ============================================================
+       BODY SPLIT
+       ============================================================ -->
+  <div class="pov-body">
+
+    <!-- LEFT — Live Evacuation Map (70%) -->
+    <!-- BACKEND: inject live evacuation route overlays, guest flow, and zone markers into #evac-map -->
+    <div class="evac-map-wrapper" id="evac-map-wrapper">
+      <div id="evac-map">
+
+        <!-- Floor plan base image -->
+        <img src="floor-map.png" alt="Level 3 Floor Map" class="map-floor-img"
+          onerror="this.style.display='none'" />
+
+        <!-- LIVE chip -->
+        <div class="map-live-chip">
+          <span class="map-live-dot"></span>EVACUATION MAP
+        </div>
+
+        <!-- Evacuation route placeholder hint -->
+        <!-- BACKEND: replace with real-time guest flow arrows and zone status -->
+
+
+        <!-- Backend integration hint -->
+
+
+      </div>
+    </div>
+
+    <!-- RIGHT — Evacuation Instructions Panel (30%) -->
+    <div class="evac-panel" id="evac-panel">
+
+      <!-- Card 1: Current Assignment -->
+      <!-- BACKEND: populate #evac-current-task with live assignment from dispatch API -->
+      <div class="panel-card assignment-card" id="evac-current-task">
+        <div class="panel-card-title">Current Assignment</div>
+        <div class="assignment-text">Guide guests from Corridor B to Conference Hall</div>
+        <div class="assignment-sub">Level 3 · West Wing Exit · Ongoing</div>
+      </div>
+
+      <!-- Card 2: Evacuation Progress -->
+      <!-- BACKEND: update #evac-progress percentage and progress bar width dynamically -->
+      <div class="panel-card">
+        <div class="panel-card-title">Evacuation Progress</div>
+        <div id="evac-progress">
+          <div class="evac-progress-num">75%</div>
+          <div class="evac-progress-label">Gathered at Conference Hall</div>
+          <div class="evac-progress-bar-track">
+            <!-- BACKEND: set width = (gathered / total) * 100 -->
+            <div class="evac-progress-bar-fill" id="evac-progress-bar" style="width: 75%;"></div>
+          </div>
+          <div class="evac-progress-meta">
+            <span id="evac-pct-text">75% gathered</span>
+            <!-- BACKEND: replace with live count -->
+            <span id="evac-fraction">309 of 412</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: Route / Corridor to Follow -->
+      <!-- BACKEND: populate #evac-route-list with pathfinding API results -->
+      <div class="panel-card">
+        <div class="panel-card-title">Route &amp; Corridors to Follow</div>
+        <ul class="route-list" id="evac-route-list">
+          <li class="route-item"><span class="route-bullet"></span>Start at West Corridor (Level 3)</li>
+          <li class="route-item"><span class="route-bullet"></span>Guide through Corridor A towards West Wing</li>
+          <li class="route-item"><span class="route-bullet"></span>Lead down West Fire Stairwell to Level 1</li>
+          <li class="route-item"><span class="route-bullet"></span>Exit to Conference Hall — Ground Floor North</li>
+        </ul>
+      </div>
+
+      <!-- Card 4: Areas / Actions to Avoid -->
+      <!-- BACKEND: populate #evac-avoid-list from live hazard API -->
+      <div class="panel-card">
+        <div class="panel-card-title">Areas / Actions to Avoid</div>
+        <ul class="avoid-list" id="evac-avoid-list">
+          <li class="avoid-item"><span class="avoid-bullet"></span>⛔ Avoid East Corridor B (Blocked — Debris)</li>
+          <li class="avoid-item"><span class="avoid-bullet"></span>⛔ Do NOT use Service Lift L12 (Power unstable)</li>
+          <li class="avoid-item"><span class="avoid-bullet"></span>⛔ Do not direct guests towards Room 315 area</li>
+        </ul>
+      </div>
+
+      <!-- Card 5: Status & Action Buttons -->
+      <!-- BACKEND: each button triggers a status update API call for Staff-2 -->
+      <div class="panel-card">
+        <div class="panel-card-title">Status / Actions</div>
+        <div class="actions-grid" id="evac-status-actions">
+          <!-- BACKEND: onclick → POST /api/evac/cleared { zone, staffId } -->
+          <button class="action-btn btn-cleared" onclick="console.log('[EVAC] Area Cleared')">
+            ✅ Area Cleared
+          </button>
+          <!-- BACKEND: onclick → POST /api/evac/moving { count, staffId } -->
+          <button class="action-btn btn-moving" onclick="console.log('[EVAC] Guests Moving')">
+            🚶 Guests Moving
+          </button>
+          <!-- BACKEND: onclick → POST /api/evac/support { location, staffId } -->
+          <button class="action-btn btn-support" onclick="console.log('[EVAC] Need Support')">
+            🚨 Need Support
+          </button>
+        </div>
+      </div>
+
+    </div><!-- end .evac-panel -->
+
+  </div><!-- end .pov-body -->
+
+</div><!-- end .page-wrapper -->
+</body>
+</html>
