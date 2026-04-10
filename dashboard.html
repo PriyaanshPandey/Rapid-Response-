@@ -255,6 +255,10 @@
     ::-webkit-scrollbar-track { background:var(--bg-primary); }
     ::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
     ::-webkit-scrollbar-thumb:hover { background:#3a3a3a; }
+    
+@keyframes dash {
+  to { stroke-dashoffset: -20; }
+}
   </style>
 </head>
 <body>
@@ -378,6 +382,9 @@
     <div class="card map-card">
       <div class="card-title">Live Floor Map — User Positions</div>
       <div class="map-wrapper" id="map-wrapper">
+        <svg id="path-layer" viewBox="0 0 100 100" preserveAspectRatio="none" 
+  style="position:absolute;inset:0;width:100%;height:100%;z-index:14;pointer-events:none;"></svg>
+      
         <img src="floor-map.png" alt="Floor Map" />
         <div id="map-dots-layer" style="position:absolute;inset:0;z-index:15;pointer-events:none"></div>
         <div id="map-fire-layer" style="position:absolute;inset:0;z-index:10;pointer-events:none"></div>
@@ -493,18 +500,43 @@ async function updateGuestStatusByFire() {
 
   const NODE_POSITIONS = {
   // ── CORRIDOR JUNCTIONS (where corridors cross) ──
-  "CJ_TL": { x:12, y:16 },  // top-left corner
-  "CJ_TM": { x:50, y:16 },  // top-center (near staircase/exit)
-  "CJ_TR": { x:88, y:16 },  // top-right corner
-  "CJ_ML": { x:12, y:42 },  // middle-left junction
+  "CJ_TL": { x:10, y:28 },  // top-left corner
+  "CJ_TM": { x:50, y:25 },  // top-center (near staircase/exit)
+  "CJ_TR": { x:88, y:27 },  // top-right corner
+  "CJ_ML": { x:10, y:42 },  // middle-left junction
   "CJ_MC": { x:47, y:42 },  // middle-center junction
-  "CJ_MR": { x:88, y:42 },  // middle-right junction
-  "CJ_LL": { x:12, y:66 },  // lower-left junction
-  "CJ_LC": { x:47, y:66 },  // lower-center junction
-  "CJ_LR": { x:88, y:66 },  // lower-right junction
-  "CJ_BL": { x:12, y:82 },  // bottom-left corner
-  "CJ_BC": { x:47, y:82 },  // bottom-center junction
-  "CJ_BR": { x:88, y:82 },  // bottom-right corner
+  "CJ_MR": { x:88, y:43 },  // middle-right junction
+  "CJ_LL": { x:10, y:60 },  // lower-left junction
+  "CJ_LC": { x:47, y:60 },  // lower-center junction
+  "CJ_LR": { x:87, y:58 },  // lower-right junction
+  "CJ_BL": { x:10, y:74 },  // bottom-left corner
+  "CJ_BC": { x:47, y:74 },  // bottom-center junction
+  "CJ_BR": { x:88, y:74 },  // bottom-right corner
+  "P_T1": { x:25, y:26 },
+"P_T2": { x:40, y:27 },
+"P_T3": { x:60, y:25 },
+"P_T4": { x:75, y:26 },
+"P_M1": { x:25, y:42 },
+"P_M2": { x:35, y:42 },
+"P_M3": { x:60, y:42 },
+"P_M4": { x:75, y:44 },
+"P_L1": { x:25, y:57 },
+"P_L2": { x:35, y:58 },
+"P_L3": { x:56, y:59 },
+"P_L4": { x:75, y:58 },
+"P_B1": { x:23, y:73 },
+"P_B2": { x:35, y:74 },
+"P_B3": { x:60, y:74 },
+"P_B4": { x:75, y:74 },
+"P_VL1": { x:9, y:34 },
+"P_VL2": { x:10, y:50 },
+"P_VL3": { x:10, y:68 },
+"P_VC1": { x:47, y:34 },
+"P_VC2": { x:47, y:50 },
+"P_VC3": { x:47, y:68 },
+"P_VR1": { x:88, y:34 },
+"P_VR2": { x:88, y:50 },
+"P_VR3": { x:88, y:68 },
 
   // ── TOP ROOMS — doors open onto top corridor (y:16) ──
   "1":  { x:17, y:17 }, "2":  { x:25, y:18 }, "3":  { x:32, y:18 }, "4":  { x:38, y:18 },
@@ -536,45 +568,118 @@ async function updateGuestStatusByFire() {
 };
 
   // Adjacent nodes for fire spread simulation
-  const NODE_ADJACENCY = {
-  // ── TOP HORIZONTAL CORRIDOR ──
-  "CJ_TL": ["1",  "CJ_TM", "CJ_ML"],
-  "1":  ["CJ_TL","2"],  "2":  ["1","3"],   "3":  ["2","4"],  "4":  ["3","CJ_TM"],
-  "CJ_TM": ["4","11","CJ_TL","CJ_TR"],
-  "11": ["CJ_TM","12"], "12": ["11","13"], "13": ["12","14"], "14": ["13","15"], "15": ["14","CJ_TR"],
-  "CJ_TR": ["15","medkit","CJ_MR"],
+ const NODE_ADJACENCY = {
+"11a": ["10"],  // or whichever corridor node 11a connects to on your map
+"10":  ["CJ_MC", "CJ_LC", "11a"],
+  // ================= TOP CORRIDOR =================
+  "CJ_TL": ["P_T1", "P_VL1"],
+  "P_T1": ["CJ_TL", "P_T2"],
+  "P_T2": ["P_T1", "CJ_TM"],
+  "CJ_TM": ["P_T2", "P_T3", "P_VC1"],
+  "P_T3": ["CJ_TM", "P_T4"],
+  "P_T4": ["P_T3", "CJ_TR"],
+  "CJ_TR": ["P_T4", "P_VR1", "medkit"],
   "medkit": ["CJ_TR"],
 
-  // ── LEFT VERTICAL CORRIDOR ──
-  "CJ_ML": ["CJ_TL","CJ_LL","5","theatre"],
+  // ================= LEFT VERTICAL =================
+  "P_VL1": ["CJ_TL", "CJ_ML", "P_VL2"],
+  "P_VL2": ["P_VL1", "CJ_LL", "P_VL3"],
+  "P_VL3": ["P_VL2", "CJ_BL"],
+
+  // ================= CENTER VERTICAL =================
+  "P_VC1": ["CJ_TM", "P_VC2"],
+  "P_VC2": ["P_VC1", "CJ_MC", "P_VC3"],
+  "P_VC3": ["P_VC2", "CJ_LC"],
+
+  // ================= RIGHT VERTICAL =================
+  "P_VR1": ["CJ_TR", "P_VR2"],
+  "P_VR2": ["P_VR1", "CJ_MR", "P_VR3"],
+  "P_VR3": ["P_VR2", "CJ_LR"],
+
+  // ================= MIDDLE CORRIDOR =================
+  "CJ_ML": ["P_M1", "P_VL1", "theatre"],
+  "P_M1": ["CJ_ML", "P_M2"],
+  "P_M2": ["P_M1", "CJ_MC"],
+
+  "CJ_MC": ["P_M2", "P_M3", "P_VC2" ],
+  
+
+  "P_M3": ["CJ_MC", "P_M4"],
+  "P_M4": ["P_M3", "CJ_MR"],
+
+  "CJ_MR": ["P_M4", "P_VR2", "meeting"],
+  "meeting": ["CJ_MR"],
+
   "theatre": ["CJ_ML"],
-  "CJ_LL": ["CJ_ML","CJ_BL","dining"],
-  "dining":  ["CJ_LL","CJ_BL"],
 
-  // ── MIDDLE HORIZONTAL CORRIDOR ──
-  "5":  ["CJ_ML","6"], "6": ["5","7"], "7": ["6","8"], "8": ["7","9"], "9": ["8","CJ_MC"],
-  "CJ_MC": ["9","33","CJ_ML","CJ_MR","10"],
-  "33": ["CJ_MC","34"], "34": ["33","meeting"],
-  "meeting": ["34","CJ_MR"],
-  "CJ_MR": ["CJ_TR","CJ_LR","meeting"],
+  // ================= LOWER CORRIDOR =================
+  "CJ_LL": ["P_L1", "P_VL2", "dining"],
+  "P_L1": ["CJ_LL", "P_L2"],
+  "P_L2": ["P_L1", "CJ_LC"],
 
-  // ── CENTER VERTICAL CONNECTOR ──
-  "10": ["CJ_MC","CJ_LC"],
+  "CJ_LC": ["P_L2", "P_L3", "P_VC3"],
 
-  // ── LOWER HORIZONTAL CORRIDOR ──
-  "CJ_LC": ["10","17","CJ_LL","CJ_LR"],
-  "17": ["CJ_LC","18"], "18": ["17","19"], "19": ["18","study"],
-  "study": ["19","CJ_LR"],
-  "CJ_LR": ["CJ_MR","CJ_BR","study"],
+  "P_L3": ["CJ_LC", "P_L4"],
+  "P_L4": ["P_L3", "CJ_LR"],
 
-  // ── BOTTOM HORIZONTAL CORRIDOR ──
-  "CJ_BL": ["CJ_LL","23","CJ_BC","dining","fireextinguisher"],
+  "CJ_LR": ["P_L4", "P_VR3", "study"],
+  "study": ["CJ_LR"],
+
+  "dining": ["CJ_LL"],
+
+  // ================= BOTTOM CORRIDOR =================
+  "CJ_BL": ["P_B1", "fireextinguisher"],
+  "P_B1": ["CJ_BL", "P_B2"],
+  "P_B2": ["P_B1", "CJ_BC"],
+
+  "CJ_BC": ["P_B2", "P_B3"],
+  "P_B3": ["CJ_BC", "P_B4"],
+  "P_B4": ["P_B3", "CJ_BR"],
+
+  "CJ_BR": ["P_B4"],
+
   "fireextinguisher": ["CJ_BL"],
-  "23": ["CJ_BL","24"], "24": ["23","CJ_BC"],
-  "CJ_BC": ["24","25","CJ_BL","CJ_BR"],
-  "25": ["CJ_BC","26"], "26": ["25","27"], "27": ["26","28"],
-  "28": ["27","29"], "29": ["28","30"], "30": ["29","CJ_BR"],
-  "CJ_BR": ["30","CJ_LR","CJ_BC"],
+
+  // ================= ROOMS → CORRIDOR =================
+
+  // Top rooms
+  "1": ["P_T1"],
+  "2": ["P_T1"],
+  "3": ["P_T2"],
+  "4": ["P_T2"],
+
+  "11": ["P_T4"],
+  "12": ["P_T4"],
+  "13": ["P_T4"],
+  "14": ["P_T4"],
+  "15": ["P_T4"],
+
+  // Middle rooms
+  "5": ["P_M1"],
+  "6": ["P_M1"],
+  "7": ["P_M2"],
+  "8": ["P_M2"],
+  "9": ["P_M2"],
+
+  "33": ["P_M3"],
+  "34": ["P_M4"],
+
+  // Lower right rooms
+  "17": ["P_L4"],
+  "18": ["P_L4"],
+  "19": ["P_L4"],
+
+  // Bottom rooms
+  "23": ["P_B2"],
+  "24": ["P_B2"],
+
+  "25": ["P_B3"],
+  "26": ["P_B3"],
+  "27": ["P_B3"],
+
+  "28": ["P_B4"],
+  "29": ["P_B4"],
+  "30": ["P_B4"]
 };
 
   let incidentData  = null;
@@ -583,6 +688,9 @@ async function updateGuestStatusByFire() {
   let activeFireNodes = [];
   let selectedSimNode = null;
   let timerInterval   = null;
+  
+  let movementTimeouts = new Set();
+  let animationFrames = new Set();
 
   // ── Populate node buttons in sim panel ──
   const nodeGrid = document.getElementById('sim-node-grid');
@@ -594,17 +702,20 @@ async function updateGuestStatusByFire() {
     nodeGrid.appendChild(btn);
   });
 
-  async function simStop() {
-    simulationRunning = false;
+ // Replace the entire simStop() function with:
+async function simStop() {
+  simulationRunning = false;
+  
+  // Clear all timeouts and animation frames
+  movementTimeouts.forEach(timeout => clearTimeout(timeout));
+  animationFrames.forEach(frame => cancelAnimationFrame(frame));
+  movementTimeouts.clear();
+  animationFrames.clear();
+  
   const btn = document.getElementById('btn-stop-sim');
   btn.disabled = true;
 
-  setSimStatus('Stopping simulation and clearing logs…', '');
-
-  await showSimProgress(6);
-
   try {
-    // 1. Reset all users to idle
     await Promise.allSettled(
       allUsers.map(u => apiPost('/api/user-status', {
         userId: u._id,
@@ -612,47 +723,38 @@ async function updateGuestStatusByFire() {
       }))
     );
 
-    // 2. OPTIONAL: Clear logs from backend (if API exists)
-    try {
-      await apiPost('/api/clear-logs', {}); // create this route if needed
-    } catch (e) {
-      console.warn("No clear-logs API, clearing only UI");
-    }
-
-    // 3. Reset frontend state
     activeFireNodes = [];
+    try { await apiPost('/api/logs/clear', {}); } catch(e) {}
+
+// Clear logs from UI immediately
+document.getElementById('alert-list').innerHTML =
+  '<div class="empty-state">Logs cleared — simulation stopped</div>';
+
+
     incidentData = null;
     fireRadius = 15;
-
-    // 4. Clear UI elements
+    
     renderFireZones();
     document.getElementById('alert-list').innerHTML =
-      '<div class="empty-state">No logs — simulation stopped</div>';
-
-    // 5. Reset header
+      '<div class="empty-state">Simulation stopped — all movements halted</div>';
     document.getElementById('incident-type').textContent = '— None';
     document.getElementById('incident-timer').textContent = '--:--';
-
-    // 6. Stop timer
+    
     if (timerInterval) {
       clearInterval(timerInterval);
       timerInterval = null;
     }
-
-    // 7. Reset buttons
+    
     document.getElementById('btn-trigger-fire').disabled = false;
     document.getElementById('btn-spread-fire').disabled = true;
     document.getElementById('btn-chaos').disabled = true;
-
-    setSimStatus('✔ Simulation stopped & logs cleared', 'ok');
-
+    
+    await logAction('⏹️ Simulation stopped — all staff and guest movements halted');
     await refresh();
-    await apiPost('/api/stop-simulation', {});
-
   } catch (e) {
-    setSimStatus('✗ Failed to stop simulation', 'err');
+    console.error('Stop failed:', e);
   }
-
+  
   btn.disabled = false;
 }
   function selectSimNode(node) {
@@ -684,36 +786,42 @@ async function updateGuestStatusByFire() {
   }
 
   // ── SIMULATION: Trigger Fire ──
-  async function simTriggerFire() {
+// Change this order - move simulationRunning = true BEFORE the Promise.all
+async function simTriggerFire() {
   if (!selectedSimNode) { setSimStatus('⚠ Select a node first', 'err'); return; }
   const btn = document.getElementById('btn-trigger-fire');
   btn.disabled = true;
   setSimStatus('Triggering fire at node ' + selectedSimNode + '…', '');
   await showSimProgress(5);
   try {
+    // 1. FIRST: Log fire incident
+    await logAction(`🔥 Fire incident caught at Node ${selectedSimNode}`);
+    
     await apiPost('/api/fire', { node: selectedSimNode });
     activeFireNodes = [selectedSimNode];
     incidentData = { type: 'fire', node: selectedSimNode, blockedNodes: [selectedSimNode] };
     if (!incidentStart) { incidentStart = new Date(); startIncidentTimer(incidentStart); }
     renderFireZones();
 
-    // 1. Mark danger zones
     await updateGuestStatusByFire();
     await refresh();
 
-    // 2. Compute ONE meeting point and log it
+    // 2. SECOND: Log meeting point selection
     const meetingPoint = getFarthestNodeFromFire();
     await logAction(`📍 Meeting point selected: Node ${meetingPoint}`);
 
-    // 3. Run evacuation (green guests) and rescue (red guests) sequentially
+    // IMPORTANT: Set simulationRunning BEFORE calling movement functions
+    simulationRunning = true;
+    
+    // 3. THIRD: Start evacuation and rescue
     await Promise.all([runEvacuation(meetingPoint), runRescue(meetingPoint)]);
 
-    simulationRunning = true;
     setSimStatus('✔ Fire triggered at node ' + selectedSimNode, 'ok');
     document.getElementById('btn-spread-fire').disabled = false;
     document.getElementById('btn-chaos').disabled = false;
     await refresh();
   } catch (e) {
+    simulationRunning = false; // Reset on error
     setSimStatus('✗ Failed: ' + e.message, 'err');
     btn.disabled = false;
   }
@@ -748,8 +856,7 @@ const newMeetingPoint = getFarthestNodeFromFire();
 await logAction(`📍 Fire spread – new meeting point: Node ${newMeetingPoint}`);
 
 // Evacuate safe guests again, then rescue help guests
-await runEvacuation(newMeetingPoint);
-await runRescue(newMeetingPoint);
+await Promise.all([runEvacuation(newMeetingPoint), runRescue(newMeetingPoint)]);
       setSimStatus('✔ Fire spread to ' + spreadTo.join(', '), 'ok');
       btn.disabled = false;
       await refresh();
@@ -1081,113 +1188,151 @@ function getFarthestNodeFromFire() {
   console.log(`🔥 Meeting point selected: ${bestNode} (farthest from fire)`);
   return bestNode;
 }
+// Replace the entire runEvacuation function with:
 async function runEvacuation(meetingPoint) {
+  if (!simulationRunning) return;
+
   const safeGraph = getSafeGraph(activeFireNodes);
-  // Use evacuation staff only (role 'evac') – same as rescue uses 'rescue' staff
-  const evacStaff = allUsers.filter(u => u.type === 'staff' && u.role === 'evac');
   const safeGuests = allUsers.filter(u => u.type === 'guest' && u.status === 'safe');
+  const evacStaff  = allUsers.filter(u => u.type === 'staff' && u.role === 'evac');
 
   if (!safeGuests.length) {
     await logAction(`🟢 No safe guests to evacuate.`);
     return;
   }
 
-  if (!evacStaff.length) {
-    await logAction(`⚠️ No evacuation staff available – safe guests will self-evacuate.`);
-    // Fallback: move safe guests directly (original behaviour)
-    for (let guest of safeGuests) {
-      const path = shortestPath(safeGraph, guest.node, meetingPoint);
-      if (path) {
-        await animateMovement(guest, path, meetingPoint);
-        await logAction(`✅ ${guest.name} self-evacuated to Node ${meetingPoint}`);
-      }
+  await logAction(`🟢 ${safeGuests.length} safe guest(s) self-evacuating to Node ${meetingPoint}`);
+
+  // Safe guests move BY THEMSELVES (no escort needed)
+  const guestMoves = safeGuests.map(async guest => {
+    const path = shortestPath(safeGraph, guest.node, meetingPoint,true);
+    if (!path) {
+      await logAction(`❌ No path for ${guest.name} to reach ${meetingPoint}`);
+      return;
     }
-    return;
-  }
-
-  await logAction(`🟢 Evacuating ${safeGuests.length} safe guest(s) to Node ${meetingPoint} with staff escort (same fashion as rescue)`);
-
-  // Process each safe guest – assign an evacuation staff member (round‑robin)
-  for (let i = 0; i < safeGuests.length; i++) {
-    const guest = safeGuests[i];
-    const staff = evacStaff[i % evacStaff.length];
-
-    // Step 1: Staff walks to the guest's current node
-    const pathToGuest = shortestPath(safeGraph, staff.node, guest.node);
-    if (!pathToGuest) {
-      await logAction(`❌ No path for ${staff.name} to reach ${guest.name} at node ${guest.node}`);
-      continue;
-    }
-
-    await logAction(`🚶 ${staff.name} heading to ${guest.name} (Node ${guest.node})`);
-    await animateMovement(staff, pathToGuest, guest.node); // staff arrives at guest
-
-    // Step 2: Guest changes status to "moving" once staff arrives
-    await apiPost('/api/user-status', { userId: guest._id, status: 'moving' });
-    await refresh();
-
-    // Step 3: Both staff and guest move together to the meeting point
-    const pathToMeeting = shortestPath(safeGraph, guest.node, meetingPoint);
-    if (!pathToMeeting) {
-      await logAction(`❌ No safe path from ${guest.node} to meeting point ${meetingPoint}`);
-      continue;
-    }
-
-    await logAction(`👥 ${staff.name} escorting ${guest.name} to Node ${meetingPoint}`);
-    await Promise.all([
-      animateMovement(staff, pathToMeeting, meetingPoint),
-      animateMovement(guest, pathToMeeting, meetingPoint)
-    ]);
-
-    // Mark both as safe at the meeting point
+    await logAction(`🚶 ${guest.name} walking to Node ${meetingPoint}`);
+    await animateMovement(guest, path, meetingPoint,true);
     await apiPost('/api/user-status', { userId: guest._id, status: 'safe', node: meetingPoint });
-    await apiPost('/api/user-status', { userId: staff._id, status: 'safe', node: meetingPoint });
-    await logAction(`✅ ${guest.name} evacuated (green) and reached Node ${meetingPoint} with ${staff.name}`);
-  }
-}
+    await logAction(`✅ ${guest.name} reached meeting point ${meetingPoint}`);
+  });
 
+  // Evac staff also moves to meeting point independently
+  const staffMoves = evacStaff.map(async staff => {
+    const path = shortestPath(safeGraph, staff.node, meetingPoint);
+    if (!path) return;
+    await logAction(`🚶 Evac staff ${staff.name} heading to Node ${meetingPoint}`);
+    await animateMovement(staff, path, meetingPoint);
+    await apiPost('/api/user-status', { userId: staff._id, status: 'idle', node: meetingPoint });
+  });
+
+  await Promise.all([...guestMoves, ...staffMoves]);
+  await checkEvacuationComplete(meetingPoint);
+}
+    
+   
+
+// Replace the entire runRescue function with:
 async function runRescue(meetingPoint) {
-  const safeGraph = getSafeGraph(activeFireNodes);
-  const rescueStaff = allUsers.filter(u => u.type === 'staff' && u.role === 'rescue');
-  const helpGuests = allUsers.filter(u => u.type === 'guest' && u.status === 'help');
+  if (!simulationRunning) return;
+
+  const safeGraph    = getSafeGraph(activeFireNodes);
+  const rescueStaff  = allUsers.filter(u => u.type === 'staff' && u.role === 'rescue');
+  const helpGuests   = allUsers.filter(u => u.type === 'guest' && u.status === 'help');
 
   if (!helpGuests.length || !rescueStaff.length) return;
 
-  await logAction(`🔴 Rescue needed for ${helpGuests.length} guest(s)`);
+  await logAction(`🔴 Starting sequential rescue for ${helpGuests.length} guest(s)`);
 
+  // ONE BY ONE — rescue staff go sequentially through each red guest
   for (let i = 0; i < helpGuests.length; i++) {
+    if (!simulationRunning) return;
+
     const staff = rescueStaff[i % rescueStaff.length];
     const guest = helpGuests[i];
- 
-    // Step 1: Staff walks to guest
-    const rescueGraph = GRAPH;
-    const toGuest = shortestPath(GRAPH, staff.node, guest.node, true);
-if (!toGuest) {
-  await logAction(`❌ No path for ${staff.name} to reach ${guest.name}`);
-  continue;
-}
-    await logAction(`🚑 ${staff.name} heading to ${guest.name} at Node ${guest.node}`);
-    await animateMovement(staff, toGuest, guest.node); // staff moves, ends at guest node
 
-    // Step 2: Update guest to "moving" now that staff arrived
+    // Refresh staff node (it may have moved from last rescue)
+    const freshStaff = allUsers.find(u => u._id === staff._id) || staff;
+
+    // Path: staff → guest (can pass through fire zone to reach trapped guest)
+    const toGuest = shortestPath(GRAPH, freshStaff.node, guest.node, true);
+    if (!toGuest) {
+      await logAction(`❌ ${staff.name} cannot reach ${guest.name} at Node ${guest.node}`);
+      continue;
+    }
+
+    await logAction(`🚑 ${staff.name} heading to rescue ${guest.name} at Node ${guest.node}`);
+    await animateMovement(freshStaff, toGuest, guest.node);
+
+    if (!simulationRunning) return;
+
     await apiPost('/api/user-status', { userId: guest._id, status: 'moving' });
     await refresh();
 
-    // Step 3: Both staff + guest walk to meeting point together
-    
+    // Path: guest → meeting point (safe route)
     const toMeeting = shortestPath(safeGraph, guest.node, meetingPoint, true);
 if (!toMeeting) {
-  await logAction(`❌ No path from ${guest.node} to meeting point`);
+  await logAction(`⚠️ ${guest.name} at Node ${guest.node} is completely surrounded by fire — cannot evacuate`);
   continue;
 }
+
     await logAction(`🚑 ${staff.name} escorting ${guest.name} to Node ${meetingPoint}`);
+
+    // Staff and guest move together
     await Promise.all([
-      animateMovement(staff, toMeeting, meetingPoint),
+      animateMovement(freshStaff, toMeeting, meetingPoint),
       animateMovement(guest, toMeeting, meetingPoint)
     ]);
 
+    await apiPost('/api/user-status', { userId: guest._id, status: 'safe', node: meetingPoint });
+    await apiPost('/api/user-status', { userId: freshStaff._id, status: 'idle', node: meetingPoint });
     await logAction(`✅ ${guest.name} rescued and reached Node ${meetingPoint}`);
+    await refresh();
   }
+
+  await checkEvacuationComplete(meetingPoint);
+}
+
+async function checkEvacuationComplete(meetingPoint) {
+  await refresh(); // get latest state
+  const guests = allUsers.filter(u => u.type === 'guest');
+  const allSafe = guests.every(u => u.status === 'safe' || u.node === meetingPoint);
+
+  if (allSafe && guests.length > 0) {
+    await logAction(`🟩 EVACUATION COMPLETE — All ${guests.length} guest(s) safely reached Node ${meetingPoint}`);
+    showEvacCompletePopup(meetingPoint, guests.length);
+  }
+}
+
+function showEvacCompletePopup(meetingPoint, count) {
+  // Remove existing popup if any
+  const existing = document.getElementById('evac-complete-popup');
+  if (existing) existing.remove();
+
+  const popup = document.createElement('div');
+  popup.id = 'evac-complete-popup';
+  popup.style.cssText = `
+    position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+    background:#0d1f0d; border:2px solid #22c55e;
+    border-radius:14px; padding:32px 40px; z-index:9999;
+    text-align:center; box-shadow:0 0 60px rgba(34,197,94,0.5);
+    animation:fade-in .3s ease-out;
+  `;
+  popup.innerHTML = `
+    <div style="font-size:48px;margin-bottom:12px">✅</div>
+    <div style="font-size:22px;font-weight:900;color:#22c55e;letter-spacing:.04em;margin-bottom:8px">
+      EVACUATION COMPLETE
+    </div>
+    <div style="font-size:14px;color:#9ca3af;margin-bottom:20px">
+      All <strong style="color:#fff">${count} guests</strong> safely reached 
+      <strong style="color:#22c55e">Node ${meetingPoint}</strong>
+    </div>
+    <button onclick="document.getElementById('evac-complete-popup').remove()"
+      style="padding:10px 28px;background:#22c55e;color:#000;border:none;border-radius:8px;
+             font-size:14px;font-weight:800;cursor:pointer;letter-spacing:.04em">
+      DISMISS
+    </button>
+  `;
+  document.body.appendChild(popup);
 }
 
   //djkstra 
@@ -1267,24 +1412,71 @@ function shortestPath(graph, start, end, allowStartBlocked = false) {
 }
 
 
+// Replace the entire animateMovement function with:
 async function animateMovement(user, path, finalNode) {
+  if (!path || path.length === 0) return;
+
+  const svg = document.getElementById('path-layer');
+  const isRescue = user.role === 'rescue';
+  const pathColor = isRescue ? '#ff4d4d' : '#22c55e';
+
+  // Build SVG path data from node positions
+  const validPoints = path.map(n => NODE_POSITIONS[n]).filter(Boolean);
+  if (validPoints.length < 1) return;
+
+  const pathData = validPoints.map((p, i) =>
+    `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`
+  ).join(' ');
+
+  // Create the path element
+  const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  pathEl.setAttribute('d', pathData);
+  pathEl.setAttribute('stroke', pathColor);
+  pathEl.setAttribute('stroke-width', '0.8');
+  pathEl.setAttribute('fill', 'none');
+  pathEl.setAttribute('opacity', '0.85');
+  pathEl.setAttribute('stroke-linecap', 'round');
+  pathEl.setAttribute('stroke-linejoin', 'round');
+
+  // Rescue = dashed, evac = solid
+  if (isRescue) {
+    pathEl.setAttribute('stroke-dasharray', '2 1.5');
+    pathEl.style.animation = 'dash 0.8s linear infinite';
+  }
+
+  pathEl.id = `path-${user._id}`;
+
+  // Remove any old path for this user
+  const old = document.getElementById(`path-${user._id}`);
+  if (old) old.remove();
+
+  svg.appendChild(pathEl);
+
+  // Move node by node
   for (let i = 0; i < path.length; i++) {
     await apiPost('/api/user-status', {
       userId: user._id,
       node: path[i],
       status: 'moving'
     });
+    user.node = path[i];
     await refresh();
     await delay(800);
   }
-  // Mark safe only if they reached the meeting point
+
+  // Cleanup path line when done
+  const toRemove = document.getElementById(`path-${user._id}`);
+  if (toRemove) toRemove.remove();
+
+  // Set final status
   await apiPost('/api/user-status', {
     userId: user._id,
     node: finalNode || path[path.length - 1],
-    status: 'safe'
+    status: user.type === 'staff' ? 'idle' : 'safe'
   });
   await refresh();
 }
+ 
 
 async function evacuateSafeGuests() {
   const meetingPoint = getFarthestNodeFromFire();

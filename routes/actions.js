@@ -58,6 +58,12 @@ router.post('/log', async (req, res, next) => {
   }
 });
 
+
+router.post('/logs/clear', async (req, res) => {
+  await Log.deleteMany({});
+  res.json({ ok: true });
+});
+
 // POST /api/clear-logs — used by Stop Simulation
 router.post('/clear-logs', async (req, res, next) => {
   try {
