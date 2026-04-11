@@ -125,19 +125,21 @@
     #btn-stop-sim:disabled { opacity:0.3; cursor:not-allowed; }
 
     /* Simulation Modal */
-    #sim-overlay {
+    #sim-overlay, #upload-overlay {
       display:none; position:fixed; inset:0; background:rgba(0,0,0,.8);
       z-index:1000; align-items:center; justify-content:center;
       backdrop-filter:blur(4px);
     }
-    #sim-overlay.open { display:flex; }
-    #sim-panel {
+    #sim-overlay.open, #upload-overlay.open { display:flex; }
+    #sim-panel, #upload-panel {
       background:var(--bg-card); border:1px solid rgba(255,77,77,.3);
       border-radius:12px; padding:26px; width:440px; max-width:95vw;
       box-shadow:0 0 50px rgba(255,77,77,.15);
       animation:fade-in .2s ease-out; position:relative;
     }
-    #sim-panel h2 { font-size:15px; font-weight:800; color:var(--danger); letter-spacing:.06em; text-transform:uppercase; margin-bottom:3px; display:flex; align-items:center; gap:8px; }
+    #upload-panel { border-color:rgba(56,189,248,.3); box-shadow:0 0 50px rgba(56,189,248,.15); }
+    #sim-panel h2, #upload-panel h2 { font-size:15px; font-weight:800; color:var(--danger); letter-spacing:.06em; text-transform:uppercase; margin-bottom:3px; display:flex; align-items:center; gap:8px; }
+    #upload-panel h2 { color:var(--info); }
     #sim-panel .sim-desc { font-size:12px; color:var(--text-muted); margin-bottom:20px; }
     .sim-close { position:absolute; top:16px; right:18px; background:none; border:none; color:var(--text-muted); font-size:22px; cursor:pointer; line-height:1; transition:color .2s; }
     .sim-close:hover { color:#fff; }
@@ -400,6 +402,40 @@
   </div>
 </div>
 
+
+
+<!-- ── UPLOAD FLOOR PLAN MODAL ───────────────────────────────── -->
+<div id="upload-overlay" onclick="if(event.target===this)closeUploadPanel()">
+  <div id="upload-panel">
+    <button class="sim-close" onclick="closeUploadPanel()">×</button>
+    <h2>📐 Upload Floor Plan</h2>
+    <p class="sim-desc">Upload a floor plan image to auto-generate navigation nodes</p>
+
+    <div class="upload-area" id="upload-area" 
+         style="border:2px dashed var(--border); border-radius:8px; padding:40px; text-align:center; cursor:pointer; margin-bottom:20px;">
+      <div style="font-size:48px; margin-bottom:10px">📤</div>
+      <div style="color:var(--text-muted)">Click or drag to upload floor plan</div>
+      <div style="font-size:11px; color:var(--text-muted); margin-top:5px">PNG, JPG, BMP (max 5MB)</div>
+    </div>
+    <input type="file" id="floorplan-input" accept="image/*" style="display:none">
+    
+    <div class="sim-progress-bar" id="upload-progress-bar" style="display:none">
+      <div class="sim-progress-fill" id="upload-progress-fill"></div>
+    </div>
+    
+    <div id="upload-preview" style="display:none; margin-bottom:15px; text-align:center;">
+      <img id="preview-img" style="max-width:100%; max-height:220px; object-fit:contain; border-radius:6px; background:#111;">
+    </div>
+    
+    <button class="btn-sim" id="btn-process" onclick="processFloorPlan()" disabled style="padding:11px; background:linear-gradient(145deg, rgba(56,189,248,0.2) 0%, rgba(2,84,138,0.4) 100%); border:1px solid rgba(56,189,248,0.5); color:#7dd3fc; border-radius:8px; font-size:13px; font-weight:800; cursor:pointer;" onmouseover="this.style.background='linear-gradient(145deg, rgba(56,189,248,0.3) 0%, rgba(2,84,138,0.6) 100%)';this.style.boxShadow='0 0 15px rgba(56,189,248,0.4)'" onmouseout="this.style.background='linear-gradient(145deg, rgba(56,189,248,0.2) 0%, rgba(2,84,138,0.4) 100%)';this.style.boxShadow='none'">
+      🔄 Generate Navigation Graph
+    </button>
+    
+    <div class="sim-status" id="upload-status"></div>
+  </div>
+</div>
+
+
 <!-- ── HEADER ─────────────────────────────────────────────────── -->
 <header>
   <div class="header-brand">
@@ -408,11 +444,17 @@
   </div>
 
   <div class="header-actions">
+    <button id="btn-upload-open" onclick="openUploadPanel()" style="padding:10px 22px; background:linear-gradient(145deg, rgba(56,189,248,0.2) 0%, rgba(2,84,138,0.4) 100%); border:1px solid rgba(56,189,248,0.5); color:#7dd3fc; border-radius:8px; font-size:13px; font-weight:800; cursor:pointer;" onmouseover="this.style.background='linear-gradient(145deg, rgba(56,189,248,0.3) 0%, rgba(2,84,138,0.6) 100%)';this.style.boxShadow='0 0 15px rgba(56,189,248,0.4)'" onmouseout="this.style.background='linear-gradient(145deg, rgba(56,189,248,0.2) 0%, rgba(2,84,138,0.4) 100%)';this.style.boxShadow='none'">
+        🗺 Upload Map
+    </button>
+    <button id="btn-reset-map" onclick="resetToDefaultMap()" style="padding:10px 22px; background:linear-gradient(145deg, rgba(156,163,175,0.2) 0%, rgba(75,85,99,0.4) 100%); border:1px solid rgba(156,163,175,0.5); color:#9ca3af; border-radius:8px; font-size:13px; font-weight:800; cursor:pointer;" onmouseover="this.style.background='linear-gradient(145deg, rgba(156,163,175,0.3) 0%, rgba(75,85,99,0.6) 100%)';this.style.boxShadow='0 0 15px rgba(156,163,175,0.4)'" onmouseout="this.style.background='linear-gradient(145deg, rgba(156,163,175,0.2) 0%, rgba(75,85,99,0.4) 100%)';this.style.boxShadow='none'">
+        🔄 Reset
+    </button>
     <button id="btn-sim-open" onclick="openSimPanel()">
-     
+      <svg viewBox="0 0 24 24"><path d="M12,23 C8.134,23 5,19.866 5,16 C5,13.541 6.268,11.385 8.241,10.158 C8.083,10.669 8,11.205 8,11.75 C8,15.201 10.799,18 14.25,18 C14.64,18 15.02,17.962 15.389,17.89 C16.375,19.467 14.331,21.5 12,21.5 C12,21.5 13.905,19.988 13.882,18.729 C13.844,16.593 11.961,15.115 11.961,13.063 C11.961,10.601 13.722,8.441 15.86,7.568 C15.422,6.074 14.234,4.925 12.721,4.408 C13.364,5.438 13.75,6.666 13.75,7.969 C13.75,11.008 11.288,13.47 8.249,13.47 C7.897,13.47 7.556,13.435 7.227,13.37 C6.467,14.646 6.035,16.149 6.035,17.75 C6.035,21.063 8.722,23.75 12.035,23.75 C12.247,23.75 12.456,23.738 12.661,23.714 C12.443,23.826 12.214,23.917 11.976,23.98 C11.984,23.987 11.992,23.993 12,24 L12,23 Z M15,2 C15,2 14.453,3.785 15.86,5.336 C17.268,6.887 18,8.887 18,11 C18,14.313 15.313,17 12,17 C8.687,17 6,14.313 6,11 C6,9.278 6.726,7.708 7.886,6.586 C7.332,7.701 7,8.966 7,10.25 C7,13.011 9.239,15.25 12,15.25 C14.254,15.25 16.155,13.743 16.782,11.666 C17.378,9.754 16.895,7.633 15.545,6 C15.84,5.334 16,4.606 16,3.844 C16,3.13 15.86,2.449 15.6,1.821 C15.405,1.879 15.204,1.936 15,2 Z"/></svg>
       Simulate Fire
     </button>
-    <button id="btn-stop-sim" onclick="simStop()">
+    <button id="btn-stop-sim" onclick="simStop()" >
       ⏹ Stop 
     </button>
   </div>
@@ -577,6 +619,159 @@ function assignStaffToGuests(users) {
   });
 }
 
+// ── FLOOR PLAN UPLOAD HANDLERS ──
+let uploadedFile = null;
+
+function openUploadPanel() {
+  document.getElementById('upload-overlay').classList.add('open');
+}
+
+function closeUploadPanel() {
+  document.getElementById('upload-overlay').classList.remove('open');
+  uploadedFile = null;
+  document.getElementById('upload-preview').style.display = 'none';
+  document.getElementById('btn-process').disabled = true;
+}
+
+// Setup upload area
+const uploadArea = document.getElementById('upload-area');
+const fileInput = document.getElementById('floorplan-input');
+
+uploadArea.onclick = () => fileInput.click();
+uploadArea.ondragover = (e) => {
+  e.preventDefault();
+  uploadArea.style.borderColor = 'var(--info)';
+};
+uploadArea.ondragleave = () => {
+  uploadArea.style.borderColor = 'var(--border)';
+};
+uploadArea.ondrop = (e) => {
+  e.preventDefault();
+  uploadArea.style.borderColor = 'var(--border)';
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) {
+    handleFile(file);
+  }
+};
+
+fileInput.onchange = (e) => {
+  if (e.target.files[0]) handleFile(e.target.files[0]);
+};
+
+function handleFile(file) {
+  uploadedFile = file;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const preview = document.getElementById('preview-img');
+    preview.src = e.target.result;
+    document.getElementById('upload-preview').style.display = 'block';
+    document.getElementById('btn-process').disabled = false;
+    setUploadStatus('Ready to process', 'ok');
+  };
+  reader.readAsDataURL(file);
+}
+async function processFloorPlan() {
+    if (!uploadedFile) return;
+    
+    const btn = document.getElementById('btn-process');
+    const progressBar = document.getElementById('upload-progress-bar');
+    const progressFill = document.getElementById('upload-progress-fill');
+    
+    btn.disabled = true;
+    progressBar.style.display = 'block';
+    setUploadStatus('Processing floor plan...', '');
+    
+    let progress = 0;
+    const interval = setInterval(() => {
+        progress += 10;
+        progressFill.style.width = Math.min(progress, 90) + '%';
+        if (progress >= 90) clearInterval(interval);
+    }, 200);
+    
+    const formData = new FormData();
+    formData.append('image', uploadedFile);
+    
+    try {
+        const response = await fetch('http://localhost:5001/upload-floorplan', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        clearInterval(interval);
+        progressFill.style.width = '100%';
+        
+        if (data.success) {
+            setUploadStatus(`✅ ${data.message}`, 'ok');
+            
+            const generatedGraph = data.graph;
+            
+            if (confirm(`Generated ${generatedGraph.metadata.total_nodes} nodes and ${generatedGraph.metadata.total_edges} connections.\nReplace current map with generated graph?`)) {
+                // Replace graph data
+                Object.assign(NODE_POSITIONS, generatedGraph.NODE_POSITIONS);
+                Object.assign(NODE_ADJACENCY, generatedGraph.NODE_ADJACENCY);
+                
+                // ✅ Update the displayed floor map image
+                const mapImage = document.querySelector('#map-wrapper img');
+                const imageUrl = URL.createObjectURL(uploadedFile);
+                mapImage.src = imageUrl;
+                
+                // ✅ Save to localStorage
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    localStorage.setItem('uploadedFloorPlan', e.target.result);
+                    localStorage.setItem('uploadedGraph', JSON.stringify(generatedGraph));
+                    console.log('✅ Saved to localStorage');
+                };
+                reader.readAsDataURL(uploadedFile);
+                
+                // Rebuild GRAPH
+                Object.keys(NODE_ADJACENCY).forEach(node => {
+                    NODE_ADJACENCY[node].forEach(adj => {
+                        if (!NODE_ADJACENCY[adj]) NODE_ADJACENCY[adj] = [];
+                        if (!NODE_ADJACENCY[adj].includes(node)) {
+                            NODE_ADJACENCY[adj].push(node);
+                        }
+                    });
+                });
+                
+                // Update simulation buttons
+                document.getElementById('sim-node-grid').innerHTML = '';
+                Object.keys(NODE_POSITIONS).forEach(n => {
+                    if (!n.startsWith('P_') && !n.startsWith('CJ_') && !n.startsWith('CH_') && !n.startsWith('CV_')) {
+                        const btnNode = document.createElement('button');
+                        btnNode.className = 'sim-node-btn';
+                        btnNode.textContent = n.charAt(0).toUpperCase() + n.slice(1);
+                        btnNode.onclick = () => selectSimNode(n);
+                        document.getElementById('sim-node-grid').appendChild(btnNode);
+                    }
+                });
+                
+                await refresh();
+                alert('✅ Graph and image replaced successfully!\n\nThe map will now use your uploaded floor plan.');
+                closeUploadPanel();
+            }
+        } else {
+            setUploadStatus(`❌ Failed: ${data.error}`, 'err');
+        }
+    } catch (error) {
+        clearInterval(interval);
+        setUploadStatus(`❌ Connection error: ${error.message}`, 'err');
+    } finally {
+        setTimeout(() => {
+            progressBar.style.display = 'none';
+            progressFill.style.width = '0%';
+            btn.disabled = false;
+        }, 1000);
+    }
+}
+
+function setUploadStatus(msg, type) {
+  const el = document.getElementById('upload-status');
+  el.textContent = msg;
+  el.className = 'sim-status ' + (type || '');
+}
+
 async function updateGuestStatusByFire() {
   const guests = allUsers.filter(u => u.type === 'guest');
 
@@ -603,6 +798,49 @@ async function updateGuestStatusByFire() {
       });
     }
   }
+}
+
+// Load saved floor plan from localStorage on page load
+function loadSavedFloorPlan() {
+    const savedImage = localStorage.getItem('uploadedFloorPlan');
+    const savedGraph = localStorage.getItem('uploadedGraph');
+    
+    if (savedImage && savedGraph) {
+        const graph = JSON.parse(savedGraph);
+        
+        // Replace the graph data
+        Object.assign(NODE_POSITIONS, graph.NODE_POSITIONS);
+        Object.assign(NODE_ADJACENCY, graph.NODE_ADJACENCY);
+        
+        // Update the displayed image
+        const mapImage = document.querySelector('#map-wrapper img');
+        mapImage.src = savedImage;
+        
+        // Rebuild GRAPH connections
+        Object.keys(NODE_ADJACENCY).forEach(node => {
+            NODE_ADJACENCY[node].forEach(adj => {
+                if (!NODE_ADJACENCY[adj]) NODE_ADJACENCY[adj] = [];
+                if (!NODE_ADJACENCY[adj].includes(node)) {
+                    NODE_ADJACENCY[adj].push(node);
+                }
+            });
+        });
+        
+        // Update simulation buttons
+        document.getElementById('sim-node-grid').innerHTML = '';
+        Object.keys(NODE_POSITIONS).forEach(n => {
+            if (!n.startsWith('P_') && !n.startsWith('CJ_') && !n.startsWith('CH_') && !n.startsWith('CV_')) {
+                const btn = document.createElement('button');
+                btn.className = 'sim-node-btn';
+                btn.textContent = n.charAt(0).toUpperCase() + n.slice(1);
+                btn.onclick = () => selectSimNode(n);
+                document.getElementById('sim-node-grid').appendChild(btn);
+            }
+        });
+        
+        console.log('✅ Loaded saved floor plan with', Object.keys(NODE_POSITIONS).length, 'nodes');
+        refresh();
+    }
 }
 
   const NODE_POSITIONS = {
@@ -676,31 +914,31 @@ async function updateGuestStatusByFire() {
 "CV_C2_MID": { x: 47, y: 60 },   // center vertical lower
 
 
-  // ── TOP ROOMS — doors open onto top corridor (y:16) ──
+  // ── TOP ROOMS ──
   "1":  { x:17, y:17 }, "2":  { x:25, y:18 }, "3":  { x:32, y:18 }, "4":  { x:38, y:18 },
-  "11": { x:74, y:17 }, "12": { x:78, y:17 }, "13": { x:84, y:17 }, "14": { x:90, y:17 }, "15": { x:96, y:17 },
+  "5": { x:74, y:17 }, "6": { x:78, y:17 }, "7": { x:84, y:17 }, "8": { x:90, y:17 }, "9": { x:96, y:17 },
 
-  // ── MIDDLE ROOMS — doors open onto middle corridor (y:42) ──
-  "5":  { x:16, y:34 }, "6":  { x:22, y:34 }, "7":  { x:28, y:34 },
-  "8":  { x:34, y:34 }, "9":  { x:40, y:34 },
-  "33": { x:56, y:34 }, "34": { x:66, y:34 },
+  // ── MIDDLE ROOMS ──
+  "10":  { x:16, y:34 }, "11":  { x:22, y:34 }, "12":  { x:28, y:34 },
+  "13":  { x:34, y:34 }, "14":  { x:40, y:34 },
+  "15": { x:56, y:34 }, "16": { x:66, y:34 },
 
-  // ── LOWER ROOMS — doors open onto lower corridor (y:66) ──
+  // ── LOWER ROOMS ──
   "17": { x:96, y:34 }, "18": { x:96, y:42 }, "19": { x:96, y:50 },
 
   // ── VERTICAL CENTER CONNECTOR ──
-  "10": { x:35, y:50 },"11a":{ x:40, y:50 },
+  "20": { x:35, y:50 },"21":{ x:40, y:50 },
 
-  // ── BOTTOM ROOMS — doors open onto bottom corridor (y:82) ──
-  "23": { x:34, y:82 }, "24": { x:40, y:82 },
-  "25": { x:53, y:82 }, "26": { x:59, y:82 }, "27": { x:64, y:82 },
-  "28": { x:70, y:82 }, "29": { x:76, y:82 }, "30": { x:81, y:82 },
+  // ── BOTTOM ROOMS ──
+  "22": { x:34, y:82 }, "23": { x:40, y:82 },
+  "24": { x:53, y:82 }, "25": { x:59, y:82 }, "26": { x:64, y:82 },
+  "27": { x:70, y:82 }, "28": { x:76, y:82 }, "29": { x:81, y:82 },
 
-  // ── SPECIAL ROOMS — doors face nearest corridor ──
-  "theatre":          { x:22, y:50 },
-  "meeting":          { x:74, y:34 },
-  "study":            { x:74, y:66 },
-  "dining":           { x:22, y:84 },
+  // ── SPECIAL MEETING POINTS ──
+  "m3":               { x:22, y:50 },
+  "m1":               { x:74, y:34 },
+  "m2":               { x:74, y:66 },
+  "m4":               { x:22, y:84 },
   "medkit":           { x:88, y:16 },
   "fireextinguisher": { x:8,  y:88 },
 };
@@ -720,7 +958,7 @@ async function updateGuestStatusByFire() {
   "CJ_TR": ["CH_TR_MID", "P_VR1", "medkit"],
   
   // Middle corridor
-  "CJ_ML": ["P_M1", "CH_ML_MID", "theatre"],
+  "CJ_ML": ["P_M1", "CH_ML_MID", "m3"],
   "CH_ML_MID": ["CJ_ML", "P_M1", "CH_MM_MID"],
   "P_M1": ["CJ_ML", "P_M2", "CH_ML_MID"],
   "P_M2": ["P_M1", "CH_MM_MID"],
@@ -729,10 +967,10 @@ async function updateGuestStatusByFire() {
   "P_M3": ["CH_MM_MID", "P_M4"],
   "P_M4": ["P_M3", "CH_MR_MID"],
   "CH_MR_MID": ["P_M4", "CJ_MR"],
-  "CJ_MR": ["CH_MR_MID", "P_VR2", "meeting"],
+  "CJ_MR": ["CH_MR_MID", "P_VR2", "m1"],
   
   // Lower corridor
-  "CJ_LL": ["P_L1", "CH_LL_MID", "dining"],
+  "CJ_LL": ["P_L1", "CH_LL_MID", "m4"],
   "CH_LL_MID": ["CJ_LL", "P_L1", "CH_LM_MID"],
   "P_L1": ["CJ_LL", "P_L2", "CH_LL_MID"],
   "P_L2": ["P_L1", "CH_LM_MID"],
@@ -741,7 +979,7 @@ async function updateGuestStatusByFire() {
   "P_L3": ["CH_LM_MID", "P_L4"],
   "P_L4": ["P_L3", "CH_LR_MID"],
   "CH_LR_MID": ["P_L4", "CJ_LR"],
-  "CJ_LR": ["CH_LR_MID", "P_VR3", "study"],
+  "CJ_LR": ["CH_LR_MID", "P_VR3", "m2"],
   
   // Bottom corridor
   "CJ_BL": ["P_B1", "CH_BL_MID", "fireextinguisher"],
@@ -787,15 +1025,16 @@ async function updateGuestStatusByFire() {
   
   // ========== ROOM CONNECTIONS (unchanged) ==========
   "1": ["P_T1"], "2": ["P_T1"], "3": ["P_T2"], "4": ["P_T2"],
-  "11": ["P_T4"], "12": ["P_T4"], "13": ["P_T4"], "14": ["P_T4"], "15": ["P_T4"],
-  "5": ["P_M1"], "6": ["P_M1"], "7": ["P_M2"], "8": ["P_M2"], "9": ["P_M2"],
-  "33": ["P_M3"], "34": ["P_M4"],
+  "5": ["P_T4"], "6": ["P_T4"], "7": ["P_T4"], "8": ["P_T4"], "9": ["P_T4"],
+  "10": ["P_M1"], "11": ["P_M1"], "12": ["P_M2"], "13": ["P_M2"], "14": ["P_M2"],
+  "15": ["P_M3"], "16": ["P_M4"],
   "17": ["P_L4"], "18": ["P_L4"], "19": ["P_L4"],
-  "23": ["P_B2"], "24": ["P_B2"],
-  "25": ["P_B3"], "26": ["P_B3"], "27": ["P_B3"],
-  "28": ["P_B4"], "29": ["P_B4"], "30": ["P_B4"],
-  "theatre": ["CJ_ML"], "meeting": ["CJ_MR"], "study": ["CJ_LR"], 
-  "dining": ["CJ_LL"], "medkit": ["CJ_TR"], "fireextinguisher": ["CJ_BL"]
+  "20": ["P_M2", "P_VC2"], "21": ["P_M2"],
+  "22": ["P_B2"], "23": ["P_B2"],
+  "24": ["P_B3"], "25": ["P_B3"], "26": ["P_B3"],
+  "27": ["P_B4"], "28": ["P_B4"], "29": ["P_B4"],
+  "m3": ["CJ_ML"], "m1": ["CJ_MR"], "m2": ["CJ_LR"], 
+  "m4": ["CJ_LL"], "medkit": ["CJ_TR"], "fireextinguisher": ["CJ_BL"]
 };
   let incidentData  = null;
   let incidentStart = null;
@@ -820,8 +1059,9 @@ async function updateGuestStatusByFire() {
     nodeGrid.appendChild(btn);
   });
 
- // Replace the entire simStop() function with:
+ 
 async function simStop() {
+  console.log("🛑 Stop button clicked - stopping simulation...");
   simulationRunning = false;
   stopSimRefreshLoop();
   
@@ -847,11 +1087,6 @@ async function simStop() {
     document.getElementById('path-layer').querySelectorAll('path').forEach(p => p.remove());
     try { await apiPost('/api/logs/clear', {}); } catch(e) {}
 
-// Clear logs from UI immediately
-document.getElementById('alert-list').innerHTML =
-  '<div class="empty-state">Logs cleared — simulation stopped</div>';
-
-
     incidentData = null;
     fireRadius = 15;
     
@@ -868,7 +1103,8 @@ document.getElementById('alert-list').innerHTML =
     
     document.getElementById('btn-trigger-fire').disabled = false;
     document.getElementById('btn-spread-fire').disabled = true;
-    document.getElementById('btn-chaos').disabled = true;
+    const btnChaos = document.getElementById('btn-chaos');
+    if (btnChaos) btnChaos.disabled = true;
     
     await logAction('⏹️ Simulation stopped — all staff and guest movements halted');
     await refresh();
@@ -878,6 +1114,7 @@ document.getElementById('alert-list').innerHTML =
   
   btn.disabled = false;
 }
+
   function selectSimNode(node) {
     selectedSimNode = node;
     document.querySelectorAll('.sim-node-btn').forEach(b => {
@@ -949,7 +1186,10 @@ async function simTriggerFire() {
 
     setSimStatus('✔ Fire triggered at node ' + selectedSimNode, 'ok');
     document.getElementById('btn-spread-fire').disabled = false;
-    document.getElementById('btn-chaos').disabled = false;
+    const btnChaos = document.getElementById('btn-chaos');
+    if (btnChaos) btnChaos.disabled = false;
+    const btnStop = document.getElementById('btn-stop-sim');
+    if (btnStop) btnStop.disabled = false;
     await refresh();
   } catch (e) {
     simulationRunning = false; // Reset on error
@@ -1029,8 +1269,11 @@ await Promise.allSettled([runEvacuation(newMeetingPoint), runRescue(newMeetingPo
   async function simReset() {
     simulationRunning = false;
     stopSimRefreshLoop();
-    const btn = document.getElementById('btn-reset-sim');
-    btn.disabled = true;
+    const btnReset = document.getElementById('btn-reset-sim');
+    const btnStop = document.getElementById('btn-stop-sim');
+    if (btnReset) btnReset.disabled = true;
+    if (btnStop) btnStop.disabled = true;
+    
     setSimStatus('Resetting all users to idle…', '');
     await showSimProgress(allUsers.length + 2);
     try {
@@ -1044,17 +1287,24 @@ await Promise.allSettled([runEvacuation(newMeetingPoint), runRescue(newMeetingPo
       renderFireZones();
       document.getElementById('incident-type').textContent = '— None';
       document.getElementById('incident-timer').textContent = '--:--';
-      document.getElementById('btn-trigger-fire').disabled  = false;
-      document.getElementById('btn-spread-fire').disabled   = true;
-      document.getElementById('btn-chaos').disabled         = true;
+      
+      const btnTrigger = document.getElementById('btn-trigger-fire');
+      if (btnTrigger) btnTrigger.disabled = false;
+      const btnSpread = document.getElementById('btn-spread-fire');
+      if (btnSpread) btnSpread.disabled = true;
+      const btnChaos = document.getElementById('btn-chaos');
+      if (btnChaos) btnChaos.disabled = true;
+      
       setSimStatus('✔ All users reset to idle', 'ok');
-      btn.disabled = false;
+      if (btnReset) btnReset.disabled = false;
       await refresh();
     } catch(e) {
       setSimStatus('✗ Reset failed: ' + e.message, 'err');
-      btn.disabled = false;
+      if (btnReset) btnReset.disabled = false;
+      if (btnStop) btnStop.disabled = false;
     }
   }
+
 
   // ── Render fire zone overlays on map ──
   function renderFireZones() {
@@ -1311,7 +1561,7 @@ async function logAction(msg) {
   }
 function getFarthestNodeFromFire() {
   // Only these four nodes are allowed as meeting points
-  const CANDIDATE_NODES = ["meeting", "study", "theatre", "dining"];
+  const CANDIDATE_NODES = ["m1", "m2", "m3", "m4"];
 
   let maxDist = -1;
   let bestNode = null;
@@ -1465,6 +1715,8 @@ async function runEvacuation(meetingPoint) {
 
       logAction(`🚶 ${currentStaff.name} escorting ${guest.name} to Node ${meetingPoint}`);
       await animateMovementPair(currentStaff, guest, toMeeting, meetingPoint, 'green');
+      
+      if (!simulationRunning) break;
 
       await apiPost('/api/user-status', { userId: guest._id, status: 'safe', node: meetingPoint });
       await apiPost('/api/user-status', { userId: currentStaff._id, status: 'idle', node: meetingPoint });
@@ -1554,6 +1806,8 @@ async function runRescue(meetingPoint) {
 
       logAction(`🚑 ${currentStaff.name} escorting ${guest.name} to Node ${meetingPoint}`);
       await animateMovementPair(currentStaff, guest, toMeeting, meetingPoint, 'red');
+
+      if (!simulationRunning) break;
 
       await apiPost('/api/user-status', { userId: guest._id, status: 'safe', node: meetingPoint });
       await apiPost('/api/user-status', { userId: currentStaff._id, status: 'idle', node: meetingPoint });
@@ -1789,6 +2043,7 @@ async function animateMovement(user, path, finalNode, colorHint) {
 
   await removePathLine(lineId);
 
+  if (!simulationRunning) return;
   await apiPost('/api/user-status', {
     userId: user._id,
     node: finalNode || path[path.length - 1],
@@ -1934,11 +2189,23 @@ async function sendRescue(userId, node, name, btn) {
     } catch(e) {}
   }
 
-  (async function init() {
+(async function init() {
     await loadIncident();
+    loadSavedFloorPlan();  // ✅ ADD THIS LINE
     await refresh();
     setInterval(refresh, 5000);
-  })();
+})();
+  // Reset to default map (original floor-map.png and hardcoded nodes)
+function resetToDefaultMap() {
+    if (confirm('⚠️ This will reset to the original floor plan and remove your uploaded map. Continue?')) {
+        // Clear localStorage
+        localStorage.removeItem('uploadedFloorPlan');
+        localStorage.removeItem('uploadedGraph');
+        
+        // Reload the page to restore original state
+        location.reload();
+    }
+}
 </script>
 </body>
 </html>
