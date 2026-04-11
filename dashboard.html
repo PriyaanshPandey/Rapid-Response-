@@ -78,16 +78,51 @@
     .stat-card.success .stat-label,.stat-card.success .stat-value { color:var(--success); animation:card-glow-green 2s infinite; }
     .stat-card.warning .stat-label,.stat-card.warning .stat-value { color:var(--warning); animation:card-glow-amber 2s infinite; }
 
-    /* Simulate Fire Button */
+    /* Header Simulate & Stop Buttons - Epic Premium */
+    .header-actions { display:flex; gap:12px; align-items:center; }
     #btn-sim-open {
-      padding:8px 16px; background:transparent; border:1px solid var(--danger);
-      color:var(--danger); border-radius:6px; font-size:12px; font-weight:700;
-      cursor:pointer; letter-spacing:.06em; text-transform:uppercase;
-      display:flex; align-items:center; gap:7px; flex-shrink:0;
-      transition:background .2s, box-shadow .2s;
-      animation:pulse-border-red 2s infinite;
+      position: relative;
+      padding:10px 22px; 
+      background:linear-gradient(145deg, rgba(220,38,38,0.2) 0%, rgba(153,27,27,0.4) 100%);
+      border:1px solid rgba(239,68,68,0.5);
+      color:#fca5a5; border-radius:8px; font-size:13px; font-weight:800;
+      cursor:pointer; letter-spacing:0.1em; text-transform:uppercase;
+      display:flex; align-items:center; gap:8px; flex-shrink:0;
+      transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 0 20px rgba(220,38,38,0.15), inset 0 1px 0 rgba(255,255,255,0.1);
+      overflow: hidden;
     }
-    #btn-sim-open:hover { background:rgba(255,77,77,.1); box-shadow:0 0 16px rgba(255,77,77,.4); }
+    #btn-sim-open::after {
+      content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 40%);
+      opacity: 0; transform: scale(0.5); transition: opacity 0.3s, transform 0.3s;
+    }
+    #btn-sim-open:hover { 
+      background:linear-gradient(145deg, rgba(239,68,68,0.3) 0%, rgba(185,28,28,0.6) 100%);
+      border-color: #ef4444; color: #fff;
+      box-shadow: 0 0 30px rgba(239,68,68,0.4), inset 0 1px 0 rgba(255,255,255,0.2);
+      transform:translateY(-1px); 
+    }
+    #btn-sim-open:hover::after { opacity: 1; transform: scale(1); }
+    #btn-sim-open svg { width:16px; height:16px; fill:currentColor; filter: drop-shadow(0 0 4px rgba(255,100,100,0.8)); animation:pulse-scale 2s infinite; }
+
+    #btn-stop-sim {
+      padding:10px 22px; 
+      background:linear-gradient(145deg, rgba(38,38,38,0.6) 0%, rgba(23,23,23,0.9) 100%);
+      border:1px solid rgba(255,255,255,0.08);
+      color:#a3a3a3; border-radius:8px; font-size:13px; font-weight:800;
+      cursor:pointer; letter-spacing:0.1em; text-transform:uppercase;
+      display:flex; align-items:center; gap:8px; flex-shrink:0;
+      transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    #btn-stop-sim:hover:not(:disabled) {
+      background:linear-gradient(145deg, rgba(64,64,64,0.8) 0%, rgba(38,38,38,1) 100%);
+      border-color:rgba(255,255,255,0.2); color:#fff;
+      box-shadow:0 6px 16px rgba(0,0,0,0.4);
+      transform:translateY(-1px);
+    }
+    #btn-stop-sim:disabled { opacity:0.3; cursor:not-allowed; }
 
     /* Simulation Modal */
     #sim-overlay {
@@ -146,16 +181,37 @@
     .col-center{ flex:1; min-width:0; display:flex; flex-direction:column; }
     .col-right { width:25%; flex-shrink:0; display:flex; flex-direction:column; gap:12px; overflow-y:auto; }
 
-    .guest-list { list-style:none; }
-    .guest-row  { display:flex; align-items:center; gap:8px; padding:9px 0; border-bottom:1px solid var(--border); animation:slide-in-left .4s ease-out forwards; position:relative; }
-    .guest-row:last-child { border-bottom:none; padding-bottom:0; }
-    .guest-row::before { content:''; position:absolute; left:-8px; top:0; bottom:0; width:3px; background:var(--danger); opacity:0; transition:opacity .2s; border-radius:2px; }
-    .guest-row:hover::before { opacity:1; }
-    .guest-room { font-size:13px; font-weight:700; color:var(--warning); width:34px; flex-shrink:0; }
-    .guest-name { flex:1; font-size:13px; color:var(--text-white); font-weight:500; }
-    .btn-rescue { padding:4px 10px; border:1px solid var(--danger); background:transparent; color:var(--danger); border-radius:4px; font-size:11px; font-weight:600; cursor:pointer; letter-spacing:.04em; transition:all .2s; white-space:nowrap; flex-shrink:0; }
-    .btn-rescue:hover { background:var(--danger); color:#fff; transform:scale(1.03); }
-    .btn-rescue:disabled { opacity:.5; cursor:default; transform:none; }
+    .guest-list { list-style:none; padding-right:4px; }
+    .guest-row { 
+      display:flex; align-items:center; gap:10px; padding:12px 14px; margin-bottom:8px;
+      background:linear-gradient(135deg, rgba(20,20,20,0.8), rgba(10,10,10,0.95));
+      border:1px solid rgba(255,255,255,0.05); border-radius:8px;
+      animation:slide-in-left .4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; position:relative; 
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    .guest-row:last-child { margin-bottom: 0; }
+    .guest-row::before {
+      content:''; position:absolute; left:0; top:0; bottom:0; width:3px;
+      background:var(--danger); opacity:0.7; box-shadow:0 0 10px var(--danger); border-radius:3px 0 0 3px;
+    }
+    .guest-row:hover { background:linear-gradient(135deg, rgba(30,20,20,0.8), rgba(15,10,10,0.95)); border-color:rgba(239,68,68,0.2); }
+    
+    .guest-info { flex:1; display:flex; flex-direction:column; gap:4px; min-width:0; }
+    .guest-name { font-size:13.5px; color:var(--text-white); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .guest-room { font-size:10.5px; font-weight:800; color:var(--warning); display:flex; align-items:center; gap:6px; text-transform:uppercase; letter-spacing:0.05em; opacity:0.9; }
+
+    .btn-rescue {
+      padding:8px 14px; background:linear-gradient(145deg, rgba(220,38,38,0.15) 0%, rgba(153,27,27,0.3) 100%);
+      border:1px solid rgba(239,68,68,0.4); color:#fca5a5; border-radius:6px;
+      font-size:11px; font-weight:800; cursor:pointer; letter-spacing:0.06em;
+      transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1); white-space:nowrap; flex-shrink:0; text-transform:uppercase;
+    }
+    .btn-rescue:hover:not(:disabled) {
+      background:linear-gradient(145deg, rgba(239,68,68,0.25) 0%, rgba(185,28,28,0.5) 100%);
+      border-color:var(--danger); color:#fff; box-shadow:0 0 15px rgba(239,68,68,0.4);
+      transform:translateY(-1px);
+    }
+    .btn-rescue:disabled { opacity:.3; cursor:not-allowed; }
 
     .assembly-count { font-size:42px; font-weight:900; color:var(--success); line-height:1; margin-bottom:10px; letter-spacing:-2px; }
     .progress-track { height:8px; background:var(--border); border-radius:4px; margin-bottom:6px; overflow:hidden; }
@@ -200,17 +256,41 @@
 
     .card-header-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
     .card-header-row .card-title { margin-bottom:0; }
-    .alert-list { display:flex; flex-direction:column; gap:10px; }
-    .alert-row  { display:flex; gap:12px; padding:10px; background:rgba(255,255,255,.03); border-left:4px solid var(--border); border-radius:0 4px 4px 0; animation:alert-flash .5s ease-out, fade-in .3s ease-out; }
-    .alert-row.al-danger  { border-left-color:var(--danger);  background:rgba(239,68,68,.05); }
-    .alert-row.al-warning { border-left-color:var(--warning); background:rgba(245,158,11,.05); }
-    .alert-row.al-info    { border-left-color:var(--info);    background:rgba(56,189,248,.05); }
-    .alert-icon-circle { width:10px; height:10px; border-radius:50%; margin-top:4px; flex-shrink:0; box-shadow:0 0 8px currentColor; }
-    .alert-content { flex:1; }
-    .alert-head    { display:flex; justify-content:space-between; margin-bottom:4px; }
-    .alert-label   { font-size:11px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; }
-    .alert-txt     { font-size:13px; font-weight:600; color:var(--text-white); line-height:1.4; }
-    .alert-time-stamp { font-family:monospace; font-size:11px; color:var(--text-muted); }
+    .alert-list { display:flex; flex-direction:column; gap:10px; max-height:280px; overflow-y:auto; padding-right:6px; scroll-behavior:smooth; }
+    .alert-list::-webkit-scrollbar { width:4px; }
+    .alert-list::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.2); border-radius:4px; }
+    .alert-row {
+      display:flex; flex-direction:column; gap:6px; padding:12px 14px; 
+      background:linear-gradient(135deg, rgba(20,20,20,0.8) 0%, rgba(10,10,10,0.95) 100%);
+      border:1px solid rgba(255,255,255,0.05);
+      border-radius:8px; animation:slide-in-left .4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+      position:relative; overflow:hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      min-height: min-content;
+    }
+    .alert-row::before {
+      content:''; position:absolute; left:0; top:0; bottom:0; width:3px;
+    }
+    .alert-row.al-danger  { background:linear-gradient(135deg, rgba(40,15,15,0.8) 0%, rgba(15,5,5,0.95) 100%); border-color:rgba(239,68,68,0.15); }
+    .alert-row.al-danger::before { background:var(--danger); box-shadow:0 0 15px var(--danger); }
+    .alert-row.al-warning { background:linear-gradient(135deg, rgba(40,30,10,0.8) 0%, rgba(15,10,5,0.95) 100%); border-color:rgba(245,158,11,0.15); }
+    .alert-row.al-warning::before { background:var(--warning); box-shadow:0 0 15px var(--warning); }
+    .alert-row.al-info    { background:linear-gradient(135deg, rgba(15,25,35,0.8) 0%, rgba(5,10,15,0.95) 100%); border-color:rgba(56,189,248,0.15); }
+    .alert-row.al-info::before { background:var(--info); box-shadow:0 0 15px var(--info); }
+    
+    .alert-icon-circle { display:none; }
+    .alert-content { display:flex; flex-direction:column; gap:6px; position:relative; z-index:2; }
+    .alert-head    { display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:6px; }
+    .alert-label   { 
+      font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:0.1em;
+      display:inline-flex; align-items:center; gap:6px;
+    }
+    .alert-row.al-danger .alert-label { color:#fca5a5; text-shadow:0 0 10px rgba(220,38,38,0.5); }
+    .alert-row.al-warning .alert-label { color:#fcd34d; text-shadow:0 0 10px rgba(245,158,11,0.5); }
+    .alert-row.al-info .alert-label { color:#7dd3fc; text-shadow:0 0 10px rgba(56,189,248,0.5); }
+
+    .alert-txt     { font-size:13px; font-weight:500; color:var(--text-white); line-height:1.5; text-shadow:0 1px 2px rgba(0,0,0,0.8); }
+    .alert-time-stamp { font-size:10px; font-weight:600; color:rgba(255,255,255,0.4); font-family:"SF Mono", ui-monospace, monospace; }
 
     .staff-row  { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); animation:fade-in .3s ease-out; }
     .staff-row:last-child { border-bottom:none; padding-bottom:0; }
@@ -251,6 +331,10 @@
     .spinner { display:inline-block; width:14px; height:14px; border:2px solid var(--border); border-top-color:var(--info); border-radius:50%; animation:spin .7s linear infinite; vertical-align:middle; margin-right:6px; }
     .empty-state { font-size:12px; color:var(--text-muted); text-align:center; padding:12px 0; font-style:italic; }
 
+    #guest-full-list, #stuck-guests-list { max-height:220px; overflow-y:auto; padding-right:5px; scroll-behavior:smooth; }
+    #guest-full-list::-webkit-scrollbar, #stuck-guests-list::-webkit-scrollbar { width:4px; }
+    #guest-full-list::-webkit-scrollbar-thumb, #stuck-guests-list::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
+
     ::-webkit-scrollbar       { width:5px; height:5px; }
     ::-webkit-scrollbar-track { background:var(--bg-primary); }
     ::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
@@ -258,6 +342,17 @@
     
 @keyframes dash {
   to { stroke-dashoffset: -20; }
+}
+@keyframes path-glow-red {
+  0%, 100% { filter: drop-shadow(0 0 2px rgba(255,77,77,0.4)); }
+  50%      { filter: drop-shadow(0 0 6px rgba(255,77,77,0.8)); }
+}
+@keyframes path-glow-green {
+  0%, 100% { filter: drop-shadow(0 0 2px rgba(34,197,94,0.4)); }
+  50%      { filter: drop-shadow(0 0 6px rgba(34,197,94,0.8)); }
+}
+@keyframes path-draw {
+  to { stroke-dashoffset: 0; }
 }
   </style>
 </head>
@@ -290,11 +385,6 @@
         🌊 Spread Fire to Adjacent Nodes
       </button>
 
-      <!-- Step 3: Chaos — randomly set users to help/moving/safe -->
-      <button class="btn-sim chaos" id="btn-chaos" onclick="simChaos()" disabled>
-        ⚡ Simulate Guest Panic (Random Statuses)
-      </button>
-
       <hr class="sim-divider" style="margin:4px 0">
 
       <!-- Reset -->
@@ -317,13 +407,15 @@
     <span class="blink-red" title="Active incident"></span>
   </div>
 
-  <!-- SIMULATE FIRE BUTTON -->
-  <button id="btn-sim-open" onclick="openSimPanel()">
-     Simulate Fire
-  </button>
-  <button class="btn-sim reset" id="btn-stop-sim" onclick="simStop()">
-  ⛔ Stop Simulation 
-</button>
+  <div class="header-actions">
+    <button id="btn-sim-open" onclick="openSimPanel()">
+     
+      Simulate Fire
+    </button>
+    <button id="btn-stop-sim" onclick="simStop()">
+      ⏹ Stop 
+    </button>
+  </div>
 
   <div class="header-stats">
     <div class="stat-card danger">
@@ -383,7 +475,22 @@
       <div class="card-title">Live Floor Map — User Positions</div>
       <div class="map-wrapper" id="map-wrapper">
         <svg id="path-layer" viewBox="0 0 100 100" preserveAspectRatio="none" 
-  style="position:absolute;inset:0;width:100%;height:100%;z-index:14;pointer-events:none;"></svg>
+  style="position:absolute;inset:0;width:100%;height:100%;z-index:14;pointer-events:none;">
+  <defs>
+    <filter id="glow-red" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="0.3" result="blur"/>
+      <feFlood flood-color="#ff4d4d" flood-opacity="0.4" result="color"/>
+      <feComposite in="color" in2="blur" operator="in" result="shadow"/>
+      <feMerge><feMergeNode in="shadow"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow-green" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="0.3" result="blur"/>
+      <feFlood flood-color="#22c55e" flood-opacity="0.4" result="color"/>
+      <feComposite in="color" in2="blur" operator="in" result="shadow"/>
+      <feMerge><feMergeNode in="shadow"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+</svg>
       
         <img src="floor-map.png" alt="Floor Map" />
         <div id="map-dots-layer" style="position:absolute;inset:0;z-index:15;pointer-events:none"></div>
@@ -537,6 +644,37 @@ async function updateGuestStatusByFire() {
 "P_VR1": { x:88, y:34 },
 "P_VR2": { x:88, y:50 },
 "P_VR3": { x:88, y:68 },
+// Add to NODE_POSITIONS:
+"CJ_TM_MID": { x: 50, y: 33 },   // between top and middle corridor
+"CJ_MC_MID": { x: 47, y: 51 },   // between middle and lower corridor  
+"CJ_LC_MID": { x: 47, y: 69 },   // between lower and bottom corridor
+"CJ_TL_MID": { x: 18, y: 35 },   // left side vertical midpoint
+"CJ_TR_MID": { x: 83, y: 35 },   // right side vertical midpoint
+"CJ_BL_MID": { x: 18, y: 68 },   // bottom-left vertical midpoint
+"CJ_BR_MID": { x: 83, y: 68 },   // bottom-right vertical midpoint
+
+// Horizontal corridor midpoints (for smoother horizontal travel)
+"CH_TL_MID": { x: 18, y: 28 },   // top-left horizontal
+"CH_TM_MID": { x: 50, y: 28 },   // top-center horizontal  
+"CH_TR_MID": { x: 83, y: 27 },   // top-right horizontal
+"CH_ML_MID": { x: 18, y: 42 },   // middle-left horizontal
+"CH_MM_MID": { x: 47, y: 42 },   // middle-center horizontal
+"CH_MR_MID": { x: 83, y: 43 },   // middle-right horizontal
+"CH_LL_MID": { x: 18, y: 60 },   // lower-left horizontal
+"CH_LM_MID": { x: 47, y: 60 },   // lower-center horizontal
+"CH_LR_MID": { x: 83, y: 58 },   // lower-right horizontal
+"CH_BL_MID": { x: 18, y: 74 },   // bottom-left horizontal
+"CH_BM_MID": { x: 47, y: 74 },   // bottom-center horizontal
+"CH_BR_MID": { x: 83, y: 74 },   // bottom-right horizontal
+
+// Additional vertical midpoints for smoother vertical travel
+"CV_L1_MID": { x: 10, y: 42 },   // left vertical mid
+"CV_L2_MID": { x: 10, y: 60 },   // left vertical lower
+"CV_R1_MID": { x: 88, y: 42 },   // right vertical mid
+"CV_R2_MID": { x: 88, y: 60 },   // right vertical lower
+"CV_C1_MID": { x: 47, y: 42 },   // center vertical mid
+"CV_C2_MID": { x: 47, y: 60 },   // center vertical lower
+
 
   // ── TOP ROOMS — doors open onto top corridor (y:16) ──
   "1":  { x:17, y:17 }, "2":  { x:25, y:18 }, "3":  { x:32, y:18 }, "4":  { x:38, y:18 },
@@ -567,121 +705,98 @@ async function updateGuestStatusByFire() {
   "fireextinguisher": { x:8,  y:88 },
 };
 
-  // Adjacent nodes for fire spread simulation
  const NODE_ADJACENCY = {
-"11a": ["10"],  // or whichever corridor node 11a connects to on your map
-"10":  ["CJ_MC", "CJ_LC", "11a"],
-  // ================= TOP CORRIDOR =================
-  "CJ_TL": ["P_T1", "P_VL1"],
-  "P_T1": ["CJ_TL", "P_T2"],
-  "P_T2": ["P_T1", "CJ_TM"],
-  "CJ_TM": ["P_T2", "P_T3", "P_VC1"],
-  "P_T3": ["CJ_TM", "P_T4"],
-  "P_T4": ["P_T3", "CJ_TR"],
-  "CJ_TR": ["P_T4", "P_VR1", "medkit"],
-  "medkit": ["CJ_TR"],
-
-  // ================= LEFT VERTICAL =================
-  "P_VL1": ["CJ_TL", "CJ_ML", "P_VL2"],
-  "P_VL2": ["P_VL1", "CJ_LL", "P_VL3"],
-  "P_VL3": ["P_VL2", "CJ_BL"],
-
-  // ================= CENTER VERTICAL =================
-  "P_VC1": ["CJ_TM", "P_VC2"],
-  "P_VC2": ["P_VC1", "CJ_MC", "P_VC3"],
-  "P_VC3": ["P_VC2", "CJ_LC"],
-
-  // ================= RIGHT VERTICAL =================
-  "P_VR1": ["CJ_TR", "P_VR2"],
-  "P_VR2": ["P_VR1", "CJ_MR", "P_VR3"],
-  "P_VR3": ["P_VR2", "CJ_LR"],
-
-  // ================= MIDDLE CORRIDOR =================
-  "CJ_ML": ["P_M1", "P_VL1", "theatre"],
-  "P_M1": ["CJ_ML", "P_M2"],
-  "P_M2": ["P_M1", "CJ_MC"],
-
-  "CJ_MC": ["P_M2", "P_M3", "P_VC2" ],
+  // ========== HORIZONTAL CORRIDORS WITH MIDPOINTS ==========
+  // Top corridor
+  "CJ_TL": ["P_T1", "CH_TL_MID"],
+  "CH_TL_MID": ["CJ_TL", "P_T1", "CH_TM_MID"],
+  "P_T1": ["CJ_TL", "P_T2", "CH_TL_MID"],
+  "P_T2": ["P_T1", "CH_TM_MID"],
+  "CH_TM_MID": ["P_T2", "CJ_TM", "P_T3", "CH_TR_MID"],
+  "CJ_TM": ["CH_TM_MID", "P_VC1", "CJ_TM_MID"],
+  "P_T3": ["CH_TM_MID", "P_T4"],
+  "P_T4": ["P_T3", "CH_TR_MID"],
+  "CH_TR_MID": ["P_T4", "CJ_TR"],
+  "CJ_TR": ["CH_TR_MID", "P_VR1", "medkit"],
   
-
-  "P_M3": ["CJ_MC", "P_M4"],
-  "P_M4": ["P_M3", "CJ_MR"],
-
-  "CJ_MR": ["P_M4", "P_VR2", "meeting"],
-  "meeting": ["CJ_MR"],
-
-  "theatre": ["CJ_ML"],
-
-  // ================= LOWER CORRIDOR =================
-  "CJ_LL": ["P_L1", "P_VL2", "dining"],
-  "P_L1": ["CJ_LL", "P_L2"],
-  "P_L2": ["P_L1", "CJ_LC"],
-
-  "CJ_LC": ["P_L2", "P_L3", "P_VC3"],
-
-  "P_L3": ["CJ_LC", "P_L4"],
-  "P_L4": ["P_L3", "CJ_LR"],
-
-  "CJ_LR": ["P_L4", "P_VR3", "study"],
-  "study": ["CJ_LR"],
-
-  "dining": ["CJ_LL"],
-
-  // ================= BOTTOM CORRIDOR =================
-  "CJ_BL": ["P_B1", "fireextinguisher"],
-  "P_B1": ["CJ_BL", "P_B2"],
-  "P_B2": ["P_B1", "CJ_BC"],
-
-  "CJ_BC": ["P_B2", "P_B3"],
-  "P_B3": ["CJ_BC", "P_B4"],
-  "P_B4": ["P_B3", "CJ_BR"],
-
-  "CJ_BR": ["P_B4"],
-
-  "fireextinguisher": ["CJ_BL"],
-
-  // ================= ROOMS → CORRIDOR =================
-
-  // Top rooms
-  "1": ["P_T1"],
-  "2": ["P_T1"],
-  "3": ["P_T2"],
-  "4": ["P_T2"],
-
-  "11": ["P_T4"],
-  "12": ["P_T4"],
-  "13": ["P_T4"],
-  "14": ["P_T4"],
-  "15": ["P_T4"],
-
-  // Middle rooms
-  "5": ["P_M1"],
-  "6": ["P_M1"],
-  "7": ["P_M2"],
-  "8": ["P_M2"],
-  "9": ["P_M2"],
-
-  "33": ["P_M3"],
-  "34": ["P_M4"],
-
-  // Lower right rooms
-  "17": ["P_L4"],
-  "18": ["P_L4"],
-  "19": ["P_L4"],
-
-  // Bottom rooms
-  "23": ["P_B2"],
-  "24": ["P_B2"],
-
-  "25": ["P_B3"],
-  "26": ["P_B3"],
-  "27": ["P_B3"],
-
-  "28": ["P_B4"],
-  "29": ["P_B4"],
-  "30": ["P_B4"]
+  // Middle corridor
+  "CJ_ML": ["P_M1", "CH_ML_MID", "theatre"],
+  "CH_ML_MID": ["CJ_ML", "P_M1", "CH_MM_MID"],
+  "P_M1": ["CJ_ML", "P_M2", "CH_ML_MID"],
+  "P_M2": ["P_M1", "CH_MM_MID"],
+  "CH_MM_MID": ["P_M2", "CJ_MC", "P_M3", "CH_MR_MID"],
+  "CJ_MC": ["CH_MM_MID", "P_VC2", "CJ_MC_MID"],
+  "P_M3": ["CH_MM_MID", "P_M4"],
+  "P_M4": ["P_M3", "CH_MR_MID"],
+  "CH_MR_MID": ["P_M4", "CJ_MR"],
+  "CJ_MR": ["CH_MR_MID", "P_VR2", "meeting"],
+  
+  // Lower corridor
+  "CJ_LL": ["P_L1", "CH_LL_MID", "dining"],
+  "CH_LL_MID": ["CJ_LL", "P_L1", "CH_LM_MID"],
+  "P_L1": ["CJ_LL", "P_L2", "CH_LL_MID"],
+  "P_L2": ["P_L1", "CH_LM_MID"],
+  "CH_LM_MID": ["P_L2", "CJ_LC", "P_L3", "CH_LR_MID"],
+  "CJ_LC": ["CH_LM_MID", "P_VC3", "CJ_LC_MID"],
+  "P_L3": ["CH_LM_MID", "P_L4"],
+  "P_L4": ["P_L3", "CH_LR_MID"],
+  "CH_LR_MID": ["P_L4", "CJ_LR"],
+  "CJ_LR": ["CH_LR_MID", "P_VR3", "study"],
+  
+  // Bottom corridor
+  "CJ_BL": ["P_B1", "CH_BL_MID", "fireextinguisher"],
+  "CH_BL_MID": ["CJ_BL", "P_B1", "CH_BM_MID"],
+  "P_B1": ["CJ_BL", "P_B2", "CH_BL_MID"],
+  "P_B2": ["P_B1", "CH_BM_MID"],
+  "CH_BM_MID": ["P_B2", "CJ_BC", "P_B3", "CH_BR_MID"],
+  "CJ_BC": ["CH_BM_MID", "P_B3"],
+  "P_B3": ["CH_BM_MID", "P_B4"],
+  "P_B4": ["P_B3", "CH_BR_MID"],
+  "CH_BR_MID": ["P_B4", "CJ_BR"],
+  "CJ_BR": ["CH_BR_MID"],
+  
+  // ========== VERTICAL CORRIDORS WITH MIDPOINTS ==========
+  // Left vertical
+  "P_VL1": ["CJ_TL", "CV_L1_MID", "CJ_ML"],
+  "CV_L1_MID": ["P_VL1", "CV_L2_MID"],
+  "CV_L2_MID": ["CV_L1_MID", "P_VL2"],
+  "P_VL2": ["CV_L2_MID", "CJ_LL", "CJ_TL_MID", "CJ_BL_MID"],
+  
+  // Center vertical  
+  "P_VC1": ["CJ_TM", "CV_C1_MID", "CJ_TM_MID"],
+  "CV_C1_MID": ["P_VC1", "CV_C2_MID"],
+  "CV_C2_MID": ["CV_C1_MID", "P_VC2"],
+  "P_VC2": ["CV_C2_MID", "CJ_MC", "CJ_MC_MID"],
+  "P_VC3": ["CJ_LC", "CJ_LC_MID"],
+  
+  // Right vertical
+  "P_VR1": ["CJ_TR", "CV_R1_MID"],
+  "CV_R1_MID": ["P_VR1", "CV_R2_MID"],
+  "CV_R2_MID": ["CV_R1_MID", "P_VR2"],
+  "P_VR2": ["CV_R2_MID", "CJ_MR", "CJ_TR_MID", "CJ_BR_MID"],
+  "P_VR3": ["CJ_LR", "CJ_BR_MID"],
+  
+  // ========== MID-JUNCTION CONNECTIONS ==========
+  "CJ_TM_MID": ["CJ_TM", "CJ_MC_MID", "P_VC1"],
+  "CJ_MC_MID": ["CJ_MC", "CJ_LC_MID", "CV_C2_MID"],
+  "CJ_LC_MID": ["CJ_LC", "CJ_BC", "P_VC3"],
+  "CJ_TL_MID": ["P_VL2", "P_VL2"],
+  "CJ_TR_MID": ["P_VR2", "P_VR2"],
+  "CJ_BL_MID": ["P_VL2", "P_VL2"],
+  "CJ_BR_MID": ["P_VR2", "P_VR3"],
+  
+  // ========== ROOM CONNECTIONS (unchanged) ==========
+  "1": ["P_T1"], "2": ["P_T1"], "3": ["P_T2"], "4": ["P_T2"],
+  "11": ["P_T4"], "12": ["P_T4"], "13": ["P_T4"], "14": ["P_T4"], "15": ["P_T4"],
+  "5": ["P_M1"], "6": ["P_M1"], "7": ["P_M2"], "8": ["P_M2"], "9": ["P_M2"],
+  "33": ["P_M3"], "34": ["P_M4"],
+  "17": ["P_L4"], "18": ["P_L4"], "19": ["P_L4"],
+  "23": ["P_B2"], "24": ["P_B2"],
+  "25": ["P_B3"], "26": ["P_B3"], "27": ["P_B3"],
+  "28": ["P_B4"], "29": ["P_B4"], "30": ["P_B4"],
+  "theatre": ["CJ_ML"], "meeting": ["CJ_MR"], "study": ["CJ_LR"], 
+  "dining": ["CJ_LL"], "medkit": ["CJ_TR"], "fireextinguisher": ["CJ_BL"]
 };
-
   let incidentData  = null;
   let incidentStart = null;
   let allUsers      = [];
@@ -695,9 +810,12 @@ async function updateGuestStatusByFire() {
   // ── Populate node buttons in sim panel ──
   const nodeGrid = document.getElementById('sim-node-grid');
   Object.keys(NODE_POSITIONS).forEach(n => {
+    // Only show valid rooms / specific named locations, exclude corridor nodes
+    if (n.startsWith('P_') || n.startsWith('CJ_') || n.startsWith('CH_') || n.startsWith('CV_')) return;
+    
     const btn = document.createElement('button');
     btn.className = 'sim-node-btn';
-    btn.textContent = n;
+    btn.textContent = n.charAt(0).toUpperCase() + n.slice(1);
     btn.onclick = () => selectSimNode(n);
     nodeGrid.appendChild(btn);
   });
@@ -705,6 +823,7 @@ async function updateGuestStatusByFire() {
  // Replace the entire simStop() function with:
 async function simStop() {
   simulationRunning = false;
+  stopSimRefreshLoop();
   
   // Clear all timeouts and animation frames
   movementTimeouts.forEach(timeout => clearTimeout(timeout));
@@ -724,6 +843,8 @@ async function simStop() {
     );
 
     activeFireNodes = [];
+    // Clear all SVG path lines from animations
+    document.getElementById('path-layer').querySelectorAll('path').forEach(p => p.remove());
     try { await apiPost('/api/logs/clear', {}); } catch(e) {}
 
 // Clear logs from UI immediately
@@ -812,9 +933,19 @@ async function simTriggerFire() {
 
     // IMPORTANT: Set simulationRunning BEFORE calling movement functions
     simulationRunning = true;
+    startSimRefreshLoop(); // start background UI refresh for parallel animations
     
-    // 3. THIRD: Start evacuation and rescue
-    await Promise.all([runEvacuation(meetingPoint), runRescue(meetingPoint)]);
+    // 3. THIRD: Start evacuation and rescue in PARALLEL
+    console.log('[SIM] Starting runEvacuation + runRescue in parallel...');
+    const results = await Promise.allSettled([
+      runEvacuation(meetingPoint),
+      runRescue(meetingPoint)
+    ]);
+    results.forEach((r, i) => {
+      const name = i === 0 ? 'EVAC' : 'RESCUE';
+      if (r.status === 'rejected') console.error(`[${name}] FAILED:`, r.reason);
+      else console.log(`[${name}] completed OK`);
+    });
 
     setSimStatus('✔ Fire triggered at node ' + selectedSimNode, 'ok');
     document.getElementById('btn-spread-fire').disabled = false;
@@ -856,7 +987,7 @@ const newMeetingPoint = getFarthestNodeFromFire();
 await logAction(`📍 Fire spread – new meeting point: Node ${newMeetingPoint}`);
 
 // Evacuate safe guests again, then rescue help guests
-await Promise.all([runEvacuation(newMeetingPoint), runRescue(newMeetingPoint)]);
+await Promise.allSettled([runEvacuation(newMeetingPoint), runRescue(newMeetingPoint)]);
       setSimStatus('✔ Fire spread to ' + spreadTo.join(', '), 'ok');
       btn.disabled = false;
       await refresh();
@@ -896,6 +1027,8 @@ await Promise.all([runEvacuation(newMeetingPoint), runRescue(newMeetingPoint)]);
 
   // ── SIMULATION: Reset all users to idle ──
   async function simReset() {
+    simulationRunning = false;
+    stopSimRefreshLoop();
     const btn = document.getElementById('btn-reset-sim');
     btn.disabled = true;
     setSimStatus('Resetting all users to idle…', '');
@@ -906,6 +1039,8 @@ await Promise.all([runEvacuation(newMeetingPoint), runRescue(newMeetingPoint)]);
       );
       activeFireNodes = [];
       incidentData    = null;
+      // Clear all SVG path lines
+      document.getElementById('path-layer').querySelectorAll('path').forEach(p => p.remove());
       renderFireZones();
       document.getElementById('incident-type').textContent = '— None';
       document.getElementById('incident-timer').textContent = '--:--';
@@ -986,10 +1121,15 @@ await Promise.all([runEvacuation(newMeetingPoint), runRescue(newMeetingPoint)]);
       ? '<li class="empty-state">No guests need help right now ✓</li>'
       : help.map((u,i) => `
           <li class="guest-row" style="animation-delay:${i*.1}s">
-            <span class="guest-room">${u.node||'?'}</span>
-            <span class="guest-name">${u.name}</span>
-            <span class="badge badge-danger">STUCK</span>
-            <button class="btn-rescue" onclick="sendRescue('${u._id}','${u.node}','${u.name}',this)">Send Rescue</button>
+            <div class="guest-info">
+              <span class="guest-name">${u.name}</span>
+              <span class="guest-room">
+                <span>📍 ${u.node||'?'}</span>
+                <span style="color:rgba(255,255,255,0.2);">|</span>
+                <span style="color:#f87171; text-shadow:0 0 5px rgba(248,113,113,0.5);">STUCK</span>
+              </span>
+            </div>
+            <button class="btn-rescue" onclick="sendRescue('${u._id}','${u.node}','${u.name}',this)">Rescue</button>
           </li>`).join('');
   }
 
@@ -1065,6 +1205,21 @@ const oy = Math.sin(angle) * radius;
     });
   }
 let simulationRunning = false;
+let _simRefreshTimer = null;
+
+// Fast background refresh loop — keeps UI in sync during parallel animations
+function startSimRefreshLoop() {
+  stopSimRefreshLoop();
+  async function tick() {
+    if (!simulationRunning) return;
+    try { await refresh(); } catch(e) { console.error('sim-refresh', e); }
+    _simRefreshTimer = setTimeout(tick, 1000);
+  }
+  tick();
+}
+function stopSimRefreshLoop() {
+  if (_simRefreshTimer) { clearTimeout(_simRefreshTimer); _simRefreshTimer = null; }
+}
 
 async function simulationLoop() {
   if (!simulationRunning) return;
@@ -1088,11 +1243,17 @@ async function simulationLoop() {
       const cm   = {danger:'var(--danger)',warning:'var(--warning)',info:'var(--info)'};
       const time = new Date(log.timestamp).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
       return `<div class="alert-row al-${type}">
-        <div class="alert-icon-circle" style="color:${cm[type]};background:${cm[type]}"></div>
         <div class="alert-content">
-          <div class="alert-head"><span class="alert-label" style="color:${cm[type]}">${lbl}</span><span class="alert-time-stamp">${time}</span></div>
+          <div class="alert-head">
+            <span class="alert-label">
+              <span style="font-size:12px;">${type==='danger'?'🔥':type==='warning'?'⚠️':'ℹ️'}</span>
+              ${lbl}
+            </span>
+            <span class="alert-time-stamp">${time}</span>
+          </div>
           <div class="alert-txt">${msg}</div>
-        </div></div>`;
+        </div>
+      </div>`;
     }).join('');
   }
 
@@ -1127,11 +1288,11 @@ async function simulationLoop() {
  
 }
 async function logAction(msg) {
-  await apiPost('/api/log', {
+  // Fire-and-forget: don't block caller with refresh
+  apiPost('/api/log', {
     message: msg,
     timestamp: new Date()
-  });
-    await refresh();
+  }).catch(e => console.error('logAction error:', e));
 }
 
   async function refresh() {
@@ -1188,107 +1349,222 @@ function getFarthestNodeFromFire() {
   console.log(`🔥 Meeting point selected: ${bestNode} (farthest from fire)`);
   return bestNode;
 }
-// Replace the entire runEvacuation function with:
+// ── Build SVG path data: straight lines between corridor nodes ──
+// The graph nodes already follow corridors, so straight lines between
+// adjacent nodes naturally trace the corridor. No L-shapes needed.
+function buildPathData(points) {
+  if (points.length < 1) return '';
+  if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
+
+  let d = `M ${points[0].x} ${points[0].y}`;
+  for (let i = 1; i < points.length; i++) {
+    d += ` L ${points[i].x} ${points[i].y}`;
+  }
+  return d;
+}
+
+// ── Evacuation: evac staff escorts non-help guests to meeting point ONE BY ONE ──
 async function runEvacuation(meetingPoint) {
   if (!simulationRunning) return;
+  console.log('[EVAC] ▶ runEvacuation started, meetingPoint:', meetingPoint);
 
   const safeGraph = getSafeGraph(activeFireNodes);
-  const safeGuests = allUsers.filter(u => u.type === 'guest' && u.status === 'safe');
-  const evacStaff  = allUsers.filter(u => u.type === 'staff' && u.role === 'evac');
 
-  if (!safeGuests.length) {
-    await logAction(`🟢 No safe guests to evacuate.`);
+  // Take our OWN fresh snapshot
+  let users;
+  try { users = await apiFetch('/api/users'); } catch(e) { users = allUsers; }
+
+  const evacStaff = users.filter(u => u.type === 'staff' && u.role === 'evac');
+
+  // Evacuate ALL guests who aren't 'help' (i.e. safe + idle) — not just 'safe'
+  const allEvacGuests = users.filter(u =>
+    u.type === 'guest' && u.status !== 'help' && u.status !== 'moving'
+  );
+
+  console.log('[EVAC] evacStaff:', evacStaff.length, 'evacGuests:', allEvacGuests.length);
+
+  if (!evacStaff.length) {
+    logAction(`🟢 No evacuation staff available.`);
+    console.log('[EVAC] ✗ No evac staff found');
     return;
   }
 
-  await logAction(`🟢 ${safeGuests.length} safe guest(s) self-evacuating to Node ${meetingPoint}`);
+  // First: mark guests already AT the meeting point as safe immediately
+  const guestsAtMeeting = allEvacGuests.filter(g => g.node === meetingPoint);
+  const guestsToEscort  = allEvacGuests.filter(g => g.node !== meetingPoint);
 
-  // Safe guests move BY THEMSELVES (no escort needed)
-  const guestMoves = safeGuests.map(async guest => {
-    const path = shortestPath(safeGraph, guest.node, meetingPoint,true);
-    if (!path) {
-      await logAction(`❌ No path for ${guest.name} to reach ${meetingPoint}`);
-      return;
-    }
-    await logAction(`🚶 ${guest.name} walking to Node ${meetingPoint}`);
-    await animateMovement(guest, path, meetingPoint,true);
-    await apiPost('/api/user-status', { userId: guest._id, status: 'safe', node: meetingPoint });
-    await logAction(`✅ ${guest.name} reached meeting point ${meetingPoint}`);
-  });
-
-  // Evac staff also moves to meeting point independently
-  const staffMoves = evacStaff.map(async staff => {
-    const path = shortestPath(safeGraph, staff.node, meetingPoint);
-    if (!path) return;
-    await logAction(`🚶 Evac staff ${staff.name} heading to Node ${meetingPoint}`);
-    await animateMovement(staff, path, meetingPoint);
-    await apiPost('/api/user-status', { userId: staff._id, status: 'idle', node: meetingPoint });
-  });
-
-  await Promise.all([...guestMoves, ...staffMoves]);
-  await checkEvacuationComplete(meetingPoint);
-}
-    
-   
-
-// Replace the entire runRescue function with:
-async function runRescue(meetingPoint) {
-  if (!simulationRunning) return;
-
-  const safeGraph    = getSafeGraph(activeFireNodes);
-  const rescueStaff  = allUsers.filter(u => u.type === 'staff' && u.role === 'rescue');
-  const helpGuests   = allUsers.filter(u => u.type === 'guest' && u.status === 'help');
-
-  if (!helpGuests.length || !rescueStaff.length) return;
-
-  await logAction(`🔴 Starting sequential rescue for ${helpGuests.length} guest(s)`);
-
-  // ONE BY ONE — rescue staff go sequentially through each red guest
-  for (let i = 0; i < helpGuests.length; i++) {
-    if (!simulationRunning) return;
-
-    const staff = rescueStaff[i % rescueStaff.length];
-    const guest = helpGuests[i];
-
-    // Refresh staff node (it may have moved from last rescue)
-    const freshStaff = allUsers.find(u => u._id === staff._id) || staff;
-
-    // Path: staff → guest (can pass through fire zone to reach trapped guest)
-    const toGuest = shortestPath(GRAPH, freshStaff.node, guest.node, true);
-    if (!toGuest) {
-      await logAction(`❌ ${staff.name} cannot reach ${guest.name} at Node ${guest.node}`);
-      continue;
-    }
-
-    await logAction(`🚑 ${staff.name} heading to rescue ${guest.name} at Node ${guest.node}`);
-    await animateMovement(freshStaff, toGuest, guest.node);
-
-    if (!simulationRunning) return;
-
-    await apiPost('/api/user-status', { userId: guest._id, status: 'moving' });
-    await refresh();
-
-    // Path: guest → meeting point (safe route)
-    const toMeeting = shortestPath(safeGraph, guest.node, meetingPoint, true);
-if (!toMeeting) {
-  await logAction(`⚠️ ${guest.name} at Node ${guest.node} is completely surrounded by fire — cannot evacuate`);
-  continue;
-}
-
-    await logAction(`🚑 ${staff.name} escorting ${guest.name} to Node ${meetingPoint}`);
-
-    // Staff and guest move together
-    await Promise.all([
-      animateMovement(freshStaff, toMeeting, meetingPoint),
-      animateMovement(guest, toMeeting, meetingPoint)
-    ]);
-
-    await apiPost('/api/user-status', { userId: guest._id, status: 'safe', node: meetingPoint });
-    await apiPost('/api/user-status', { userId: freshStaff._id, status: 'idle', node: meetingPoint });
-    await logAction(`✅ ${guest.name} rescued and reached Node ${meetingPoint}`);
-    await refresh();
+  for (const g of guestsAtMeeting) {
+    apiPost('/api/user-status', { userId: g._id, status: 'safe', node: meetingPoint })
+      .catch(e => console.error('mark-safe', e));
+  }
+  if (guestsAtMeeting.length) {
+    logAction(`🟢 ${guestsAtMeeting.length} guest(s) already at meeting point ${meetingPoint} — marked safe`);
   }
 
+  if (!guestsToEscort.length) {
+    logAction(`🟢 All guests already at meeting point — evac staff heading there.`);
+    // Move evac staff to meeting point anyway
+    for (const staff of evacStaff) {
+      if (!simulationRunning) return;
+      if (staff.node === meetingPoint) continue;
+      const path = shortestPath(safeGraph, staff.node, meetingPoint);
+      if (path && path.length >= 2) {
+        logAction(`🚶 Evac staff ${staff.name} heading to meeting point ${meetingPoint}`);
+        await animateMovement(staff, path, meetingPoint, 'green');
+        await apiPost('/api/user-status', { userId: staff._id, status: 'idle', node: meetingPoint });
+      }
+    }
+    console.log('[EVAC] ✔ No guests to escort, staff moved');
+    return;
+  }
+
+  logAction(`🟢 Evac staff escorting ${guestsToEscort.length} guest(s) to Node ${meetingPoint}`);
+
+  // Parallel workers: each evac staff handles a queue of guests one by one
+  const staffQueues = evacStaff.map(() => []);
+  guestsToEscort.forEach((g, i) => {
+    staffQueues[i % evacStaff.length].push(g);
+  });
+
+  const workerPromises = evacStaff.map(async (staff, staffIndex) => {
+    const queue = staffQueues[staffIndex];
+    let currentStaff = staff;
+
+    for (const guest of queue) {
+      if (!simulationRunning) break;
+
+      console.log(`[EVAC] worker ${staffIndex} handling guest=${guest.name} at ${guest.node}`);
+
+      // Get fresh staff position
+      try {
+        const fu = await apiFetch('/api/users');
+        currentStaff = fu.find(u => u._id === staff._id) || currentStaff;
+      } catch(e) {}
+
+      // 1. Staff goes TO the guest
+      if (currentStaff.node !== guest.node) {
+        const toGuest = shortestPath(safeGraph, currentStaff.node, guest.node, true);
+        if (!toGuest || toGuest.length < 2) {
+          logAction(`❌ Evac staff ${currentStaff.name} cannot reach ${guest.name}`);
+          continue;
+        }
+        logAction(`🚶 ${currentStaff.name} going to ${guest.name} at Node ${guest.node}`);
+        await animateMovement(currentStaff, toGuest, guest.node, 'green');
+        currentStaff.node = guest.node;
+      }
+
+      if (!simulationRunning) break;
+
+      // 2. Staff + guest walk together to meeting point
+      const toMeeting = shortestPath(safeGraph, guest.node, meetingPoint, true);
+      if (!toMeeting || toMeeting.length < 2) {
+        await apiPost('/api/user-status', { userId: guest._id, status: 'safe', node: meetingPoint });
+        logAction(`✅ ${guest.name} already at meeting point or unreachable`);
+        continue;
+      }
+
+      logAction(`🚶 ${currentStaff.name} escorting ${guest.name} to Node ${meetingPoint}`);
+      await animateMovementPair(currentStaff, guest, toMeeting, meetingPoint, 'green');
+
+      await apiPost('/api/user-status', { userId: guest._id, status: 'safe', node: meetingPoint });
+      await apiPost('/api/user-status', { userId: currentStaff._id, status: 'idle', node: meetingPoint });
+      currentStaff.node = meetingPoint;
+      logAction(`✅ ${guest.name} escorted to meeting point ${meetingPoint}`);
+    }
+  });
+
+  await Promise.all(workerPromises);
+
+  console.log('[EVAC] ✔ runEvacuation finished');
+  await checkEvacuationComplete(meetingPoint);
+}
+
+async function runRescue(meetingPoint) {
+  if (!simulationRunning) return;
+  console.log('[RESCUE] ▶ runRescue started, meetingPoint:', meetingPoint);
+
+  const safeGraph = getSafeGraph(activeFireNodes);
+
+  // Take our OWN fresh snapshot
+  let users;
+  try { users = await apiFetch('/api/users'); } catch(e) { users = allUsers; }
+
+  const rescueStaff = users.filter(u => u.type === 'staff' && u.role === 'rescue');
+  const helpGuests  = users.filter(u => u.type === 'guest' && u.status === 'help');
+
+  console.log('[RESCUE] rescueStaff:', rescueStaff.length, 'helpGuests:', helpGuests.length);
+
+  if (!helpGuests.length || !rescueStaff.length) {
+    console.log('[RESCUE] ✗ No help guests or rescue staff');
+    return;
+  }
+
+  logAction(`🔴 Starting rescue for ${helpGuests.length} guest(s)`);
+
+  const staffQueues = rescueStaff.map(() => []);
+  helpGuests.forEach((g, i) => {
+    staffQueues[i % rescueStaff.length].push(g);
+  });
+
+  const workerPromises = rescueStaff.map(async (staff, staffIndex) => {
+    const queue = staffQueues[staffIndex];
+    let currentStaff = staff;
+
+    for (const guest of queue) {
+      if (!simulationRunning) break;
+
+      console.log(`[RESCUE] worker ${staffIndex} handling guest=${guest.name}`);
+
+      // Get fresh staff position
+      try {
+        const fu = await apiFetch('/api/users');
+        currentStaff = fu.find(u => u._id === staff._id) || currentStaff;
+      } catch(e) {}
+
+      // Path: staff → guest (red path)
+      const toGuest = shortestPath(GRAPH, currentStaff.node, guest.node, true);
+      if (!toGuest || toGuest.length < 2) {
+        if (currentStaff.node === guest.node) {
+          logAction(`🚑 ${currentStaff.name} is already at ${guest.name}'s location`);
+        } else {
+          logAction(`❌ ${currentStaff.name} cannot reach ${guest.name} at Node ${guest.node}`);
+          continue;
+        }
+      } else {
+        logAction(`🚑 ${currentStaff.name} heading to rescue ${guest.name} at Node ${guest.node}`);
+        await animateMovement(currentStaff, toGuest, guest.node, 'red');
+        currentStaff.node = guest.node;
+      }
+
+      if (!simulationRunning) break;
+
+      await apiPost('/api/user-status', { userId: guest._id, status: 'moving' });
+
+      // Path: guest → meeting point (red path)
+      const toMeeting = shortestPath(safeGraph, guest.node, meetingPoint, true);
+      if (!toMeeting || toMeeting.length < 2) {
+        if (guest.node === meetingPoint) {
+          await apiPost('/api/user-status', { userId: guest._id, status: 'safe', node: meetingPoint });
+          logAction(`✅ ${guest.name} already at meeting point`);
+        } else {
+          logAction(`⚠️ ${guest.name} at Node ${guest.node} is surrounded by fire — cannot evacuate`);
+        }
+        continue;
+      }
+
+      logAction(`🚑 ${currentStaff.name} escorting ${guest.name} to Node ${meetingPoint}`);
+      await animateMovementPair(currentStaff, guest, toMeeting, meetingPoint, 'red');
+
+      await apiPost('/api/user-status', { userId: guest._id, status: 'safe', node: meetingPoint });
+      await apiPost('/api/user-status', { userId: currentStaff._id, status: 'idle', node: meetingPoint });
+      currentStaff.node = meetingPoint;
+      logAction(`✅ ${guest.name} rescued and reached Node ${meetingPoint}`);
+    }
+  });
+
+  await Promise.all(workerPromises);
+
+  console.log('[RESCUE] ✔ runRescue finished');
   await checkEvacuationComplete(meetingPoint);
 }
 
@@ -1336,6 +1612,14 @@ function showEvacCompletePopup(meetingPoint, count) {
 }
 
   //djkstra 
+Object.keys(NODE_ADJACENCY).forEach(node => {
+  NODE_ADJACENCY[node].forEach(adj => {
+    if (!NODE_ADJACENCY[adj]) NODE_ADJACENCY[adj] = [];
+    if (!NODE_ADJACENCY[adj].includes(node)) {
+      NODE_ADJACENCY[adj].push(node);
+    }
+  });
+});
 const GRAPH = NODE_ADJACENCY;
 
 function getSafeGraph(blockedNodes) {
@@ -1412,69 +1696,138 @@ function shortestPath(graph, start, end, allowStartBlocked = false) {
 }
 
 
-// Replace the entire animateMovement function with:
-async function animateMovement(user, path, finalNode) {
-  if (!path || path.length === 0) return;
-
+// ── Draw a single SVG path line (used by animateMovement) ──
+function drawPathLine(pathId, points, color, glowFilterId) {
   const svg = document.getElementById('path-layer');
-  const isRescue = user.role === 'rescue';
-  const pathColor = isRescue ? '#ff4d4d' : '#22c55e';
+  const pathData = buildPathData(points);
 
-  // Build SVG path data from node positions
-  const validPoints = path.map(n => NODE_POSITIONS[n]).filter(Boolean);
-  if (validPoints.length < 1) return;
+  // Subtle glow background
+  const glowEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  glowEl.setAttribute('d', pathData);
+  glowEl.setAttribute('stroke', color);
+  glowEl.setAttribute('stroke-width', '1.2');
+  glowEl.setAttribute('fill', 'none');
+  glowEl.setAttribute('opacity', '0.18');
+  glowEl.setAttribute('stroke-linecap', 'square');
+  glowEl.setAttribute('stroke-linejoin', 'miter');
+  glowEl.setAttribute('filter', `url(#${glowFilterId})`);
+  glowEl.id = `path-glow-${pathId}`;
 
-  const pathData = validPoints.map((p, i) =>
-    `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`
-  ).join(' ');
-
-  // Create the path element
+  // Main path — thin, crisp
   const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
   pathEl.setAttribute('d', pathData);
-  pathEl.setAttribute('stroke', pathColor);
-  pathEl.setAttribute('stroke-width', '0.8');
+  pathEl.setAttribute('stroke', color);
+  pathEl.setAttribute('stroke-width', '0.5');
   pathEl.setAttribute('fill', 'none');
   pathEl.setAttribute('opacity', '0.85');
-  pathEl.setAttribute('stroke-linecap', 'round');
-  pathEl.setAttribute('stroke-linejoin', 'round');
+  pathEl.setAttribute('stroke-linecap', 'square');
+  pathEl.setAttribute('stroke-linejoin', 'miter');
+  pathEl.id = `path-${pathId}`;
 
-  // Rescue = dashed, evac = solid
-  if (isRescue) {
-    pathEl.setAttribute('stroke-dasharray', '2 1.5');
-    pathEl.style.animation = 'dash 0.8s linear infinite';
-  }
+  // Remove old paths with same id
+  const oldGlow = document.getElementById(`path-glow-${pathId}`);
+  const oldPath = document.getElementById(`path-${pathId}`);
+  if (oldGlow) oldGlow.remove();
+  if (oldPath) oldPath.remove();
 
-  pathEl.id = `path-${user._id}`;
-
-  // Remove any old path for this user
-  const old = document.getElementById(`path-${user._id}`);
-  if (old) old.remove();
-
+  svg.appendChild(glowEl);
   svg.appendChild(pathEl);
+
+  // Animate draw-in
+  try {
+    const len = pathEl.getTotalLength();
+    const dur = Math.min(points.length * 0.25, 1.2);
+    pathEl.setAttribute('stroke-dasharray', len);
+    pathEl.setAttribute('stroke-dashoffset', len);
+    pathEl.style.transition = `stroke-dashoffset ${dur}s ease-out`;
+    glowEl.setAttribute('stroke-dasharray', len);
+    glowEl.setAttribute('stroke-dashoffset', len);
+    glowEl.style.transition = `stroke-dashoffset ${dur}s ease-out`;
+    void pathEl.getBoundingClientRect();
+    pathEl.setAttribute('stroke-dashoffset', '0');
+    glowEl.setAttribute('stroke-dashoffset', '0');
+  } catch(e) {}
+
+  return { pathEl, glowEl };
+}
+
+// ── Fade out and remove a drawn path ──
+async function removePathLine(pathId) {
+  const p = document.getElementById(`path-${pathId}`);
+  const g = document.getElementById(`path-glow-${pathId}`);
+  if (p) { p.style.transition = 'opacity 0.4s'; p.style.opacity = '0'; }
+  if (g) { g.style.transition = 'opacity 0.4s'; g.style.opacity = '0'; }
+  await delay(400);
+  if (p) p.remove();
+  if (g) g.remove();
+}
+
+// ── Animate a SINGLE user moving along a path ──
+async function animateMovement(user, path, finalNode, colorHint) {
+  if (!path || path.length === 0) return;
+  if (path.length === 1 && user.node === path[0]) return;
+
+  const isRed = colorHint === 'red' || (!colorHint && user.role === 'rescue');
+  const color = isRed ? '#ff4d4d' : '#22c55e';
+  const glow  = isRed ? 'glow-red' : 'glow-green';
+  const lineId = user._id;
+
+  const validPoints = path.map(n => NODE_POSITIONS[n]).filter(Boolean);
+  if (validPoints.length < 2) return;
+
+  drawPathLine(lineId, validPoints, color, glow);
 
   // Move node by node
   for (let i = 0; i < path.length; i++) {
-    await apiPost('/api/user-status', {
-      userId: user._id,
-      node: path[i],
-      status: 'moving'
-    });
+    if (!simulationRunning) break;
+    apiPost('/api/user-status', {
+      userId: user._id, node: path[i], status: 'moving'
+    }).catch(e => console.error('move', e));
     user.node = path[i];
-    await refresh();
-    await delay(800);
+    await delay(700);
   }
 
-  // Cleanup path line when done
-  const toRemove = document.getElementById(`path-${user._id}`);
-  if (toRemove) toRemove.remove();
+  await removePathLine(lineId);
 
-  // Set final status
   await apiPost('/api/user-status', {
     userId: user._id,
     node: finalNode || path[path.length - 1],
     status: user.type === 'staff' ? 'idle' : 'safe'
   });
-  await refresh();
+}
+
+// ── Animate TWO users moving together on the SAME path (one line drawn) ──
+async function animateMovementPair(staff, guest, path, finalNode, colorHint) {
+  if (!path || path.length < 2) return;
+
+  const isRed = colorHint === 'red';
+  const color = isRed ? '#ff4d4d' : '#22c55e';
+  const glow  = isRed ? 'glow-red' : 'glow-green';
+  const lineId = `pair-${staff._id}-${guest._id}`;
+
+  const validPoints = path.map(n => NODE_POSITIONS[n]).filter(Boolean);
+  if (validPoints.length < 2) return;
+
+  // Draw ONE shared path line (not two)
+  drawPathLine(lineId, validPoints, color, glow);
+
+  // Move both node by node together
+  for (let i = 0; i < path.length; i++) {
+    if (!simulationRunning) break;
+    apiPost('/api/user-status', {
+      userId: staff._id, node: path[i], status: 'moving'
+    }).catch(e => console.error('move-s', e));
+    apiPost('/api/user-status', {
+      userId: guest._id, node: path[i], status: 'moving'
+    }).catch(e => console.error('move-g', e));
+    staff.node = path[i];
+    guest.node = path[i];
+    await delay(700);
+  }
+
+  await removePathLine(lineId);
+
+  // Final status set by the caller
 }
  
 
