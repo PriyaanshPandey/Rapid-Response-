@@ -66,28 +66,28 @@
     .badge-live    { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:4px; font-size:11px; font-weight:700; letter-spacing:.06em; background:rgba(34,197,94,.12); color:var(--success); border:1px solid rgba(34,197,94,.3); animation:breathing 2s infinite; }
 
     /* Header */
-    header { width:100%; background:var(--bg-card); border-bottom:1px solid var(--border); padding:10px 20px; display:flex; align-items:center; gap:14px; flex-shrink:0; }
-    .header-brand { display:flex; align-items:center; gap:10px; white-space:nowrap; flex-shrink:0; }
-    .brand-title  { font-size:24px; font-weight:800; color:var(--text-white); letter-spacing:-.01em; }
-    .header-stats { display:flex; gap:10px; flex:1; justify-content:flex-end; }
-    .stat-card { background:var(--bg-primary); border:1px solid var(--border); border-radius:var(--radius); padding:8px 14px; min-width:150px; flex:1; max-width:200px; }
-    .stat-label{ font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; margin-bottom:3px; }
-    .stat-value{ font-size:20px; font-weight:800; line-height:1.1; margin-bottom:3px; }
-    .stat-sub  { font-size:11px; color:var(--text-muted); display:flex; align-items:center; gap:5px; }
+    header { width:100%; background:var(--bg-card); border-bottom:1px solid var(--border); padding:8px 16px; display:flex; align-items:center; gap:12px; flex-shrink:0; flex-wrap:nowrap; overflow:hidden; }
+    .header-brand { display:flex; align-items:center; gap:6px; white-space:nowrap; flex-shrink:1; min-width:0; }
+    .brand-title  { font-size:18px; font-weight:800; color:var(--text-white); letter-spacing:-.01em; overflow:hidden; text-overflow:ellipsis; }
+    .header-stats { display:flex; gap:8px; flex:1; justify-content:flex-end; min-width:0; }
+    .stat-card { background:var(--bg-primary); border:1px solid var(--border); border-radius:var(--radius); padding:6px 10px; min-width:110px; flex:0 1 auto; max-width:160px; }
+    .stat-label{ font-size:9px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; margin-bottom:2px; white-space:nowrap; }
+    .stat-value{ font-size:16px; font-weight:800; line-height:1; margin-bottom:2px; }
+    .stat-sub  { font-size:9px; color:var(--text-muted); display:flex; align-items:center; gap:4px; white-space:nowrap; }
     .stat-card.danger  .stat-label,.stat-card.danger  .stat-value { color:var(--danger);  animation:card-glow-red   2s infinite; }
     .stat-card.success .stat-label,.stat-card.success .stat-value { color:var(--success); animation:card-glow-green 2s infinite; }
     .stat-card.warning .stat-label,.stat-card.warning .stat-value { color:var(--warning); animation:card-glow-amber 2s infinite; }
 
     /* Header Simulate & Stop Buttons - Epic Premium */
-    .header-actions { display:flex; gap:12px; align-items:center; }
+    .header-actions { display:flex; gap:8px; align-items:center; flex-shrink:0; }
     #btn-sim-open {
       position: relative;
-      padding:10px 22px; 
+      padding:8px 16px; 
       background:linear-gradient(145deg, rgba(220,38,38,0.2) 0%, rgba(153,27,27,0.4) 100%);
       border:1px solid rgba(239,68,68,0.5);
-      color:#fca5a5; border-radius:8px; font-size:13px; font-weight:800;
-      cursor:pointer; letter-spacing:0.1em; text-transform:uppercase;
-      display:flex; align-items:center; gap:8px; flex-shrink:0;
+      color:#fca5a5; border-radius:8px; font-size:12px; font-weight:800;
+      cursor:pointer; letter-spacing:0.06em; text-transform:uppercase;
+      display:flex; align-items:center; gap:6px; flex-shrink:0;
       transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       box-shadow: 0 0 20px rgba(220,38,38,0.15), inset 0 1px 0 rgba(255,255,255,0.1);
       overflow: hidden;
@@ -104,15 +104,15 @@
       transform:translateY(-1px); 
     }
     #btn-sim-open:hover::after { opacity: 1; transform: scale(1); }
-    #btn-sim-open svg { width:16px; height:16px; fill:currentColor; filter: drop-shadow(0 0 4px rgba(255,100,100,0.8)); animation:pulse-scale 2s infinite; }
+    #btn-sim-open svg { width:14px; height:14px; fill:currentColor; filter: drop-shadow(0 0 4px rgba(255,100,100,0.8)); animation:pulse-scale 2s infinite; }
 
     #btn-stop-sim {
-      padding:10px 22px; 
+      padding:8px 16px; 
       background:linear-gradient(145deg, rgba(38,38,38,0.6) 0%, rgba(23,23,23,0.9) 100%);
       border:1px solid rgba(255,255,255,0.08);
-      color:#a3a3a3; border-radius:8px; font-size:13px; font-weight:800;
-      cursor:pointer; letter-spacing:0.1em; text-transform:uppercase;
-      display:flex; align-items:center; gap:8px; flex-shrink:0;
+      color:#a3a3a3; border-radius:8px; font-size:12px; font-weight:800;
+      cursor:pointer; letter-spacing:0.06em; text-transform:uppercase;
+      display:flex; align-items:center; gap:6px; flex-shrink:0;
       transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
@@ -444,12 +444,13 @@
   </div>
 
   <div class="header-actions">
-    <button id="btn-upload-open" onclick="openUploadPanel()" style="padding:10px 22px; background:linear-gradient(145deg, rgba(56,189,248,0.2) 0%, rgba(2,84,138,0.4) 100%); border:1px solid rgba(56,189,248,0.5); color:#7dd3fc; border-radius:8px; font-size:13px; font-weight:800; cursor:pointer;" onmouseover="this.style.background='linear-gradient(145deg, rgba(56,189,248,0.3) 0%, rgba(2,84,138,0.6) 100%)';this.style.boxShadow='0 0 15px rgba(56,189,248,0.4)'" onmouseout="this.style.background='linear-gradient(145deg, rgba(56,189,248,0.2) 0%, rgba(2,84,138,0.4) 100%)';this.style.boxShadow='none'">
+    <button id="btn-upload-open" onclick="openUploadPanel()" style="padding:8px 16px; background:linear-gradient(145deg, rgba(56,189,248,0.2) 0%, rgba(2,84,138,0.4) 100%); border:1px solid rgba(56,189,248,0.5); color:#7dd3fc; border-radius:8px; font-size:12px; font-weight:800; cursor:pointer;" onmouseover="this.style.background='linear-gradient(145deg, rgba(56,189,248,0.3) 0%, rgba(2,84,138,0.6) 100%)';this.style.boxShadow='0 0 15px rgba(56,189,248,0.4)'" onmouseout="this.style.background='linear-gradient(145deg, rgba(56,189,248,0.2) 0%, rgba(2,84,138,0.4) 100%)';this.style.boxShadow='none'">
         🗺 Upload Map
     </button>
-    <button id="btn-reset-map" onclick="resetToDefaultMap()" style="padding:10px 22px; background:linear-gradient(145deg, rgba(156,163,175,0.2) 0%, rgba(75,85,99,0.4) 100%); border:1px solid rgba(156,163,175,0.5); color:#9ca3af; border-radius:8px; font-size:13px; font-weight:800; cursor:pointer;" onmouseover="this.style.background='linear-gradient(145deg, rgba(156,163,175,0.3) 0%, rgba(75,85,99,0.6) 100%)';this.style.boxShadow='0 0 15px rgba(156,163,175,0.4)'" onmouseout="this.style.background='linear-gradient(145deg, rgba(156,163,175,0.2) 0%, rgba(75,85,99,0.4) 100%)';this.style.boxShadow='none'">
-        🔄 Reset
+    <button id="btn-reset-map" onclick="resetToDefaultMap()" style="padding:8px 16px; background:linear-gradient(145deg, rgba(156,163,175,0.2) 0%, rgba(75,85,99,0.4) 100%); border:1px solid rgba(156,163,175,0.5); color:#9ca3af; border-radius:8px; font-size:12px; font-weight:800; cursor:pointer;" onmouseover="this.style.background='linear-gradient(145deg, rgba(156,163,175,0.3) 0%, rgba(75,85,99,0.6) 100%)';this.style.boxShadow='0 0 15px rgba(156,163,175,0.4)'" onmouseout="this.style.background='linear-gradient(145deg, rgba(156,163,175,0.2) 0%, rgba(75,85,99,0.4) 100%)';this.style.boxShadow='none'">
+        ↺ Reset
     </button>
+  </div>
     <button id="btn-sim-open" onclick="openSimPanel()">
       <svg viewBox="0 0 24 24"><path d="M12,23 C8.134,23 5,19.866 5,16 C5,13.541 6.268,11.385 8.241,10.158 C8.083,10.669 8,11.205 8,11.75 C8,15.201 10.799,18 14.25,18 C14.64,18 15.02,17.962 15.389,17.89 C16.375,19.467 14.331,21.5 12,21.5 C12,21.5 13.905,19.988 13.882,18.729 C13.844,16.593 11.961,15.115 11.961,13.063 C11.961,10.601 13.722,8.441 15.86,7.568 C15.422,6.074 14.234,4.925 12.721,4.408 C13.364,5.438 13.75,6.666 13.75,7.969 C13.75,11.008 11.288,13.47 8.249,13.47 C7.897,13.47 7.556,13.435 7.227,13.37 C6.467,14.646 6.035,16.149 6.035,17.75 C6.035,21.063 8.722,23.75 12.035,23.75 C12.247,23.75 12.456,23.738 12.661,23.714 C12.443,23.826 12.214,23.917 11.976,23.98 C11.984,23.987 11.992,23.993 12,24 L12,23 Z M15,2 C15,2 14.453,3.785 15.86,5.336 C17.268,6.887 18,8.887 18,11 C18,14.313 15.313,17 12,17 C8.687,17 6,14.313 6,11 C6,9.278 6.726,7.708 7.886,6.586 C7.332,7.701 7,8.966 7,10.25 C7,13.011 9.239,15.25 12,15.25 C14.254,15.25 16.155,13.743 16.782,11.666 C17.378,9.754 16.895,7.633 15.545,6 C15.84,5.334 16,4.606 16,3.844 C16,3.13 15.86,2.449 15.6,1.821 C15.405,1.879 15.204,1.936 15,2 Z"/></svg>
       Simulate Fire

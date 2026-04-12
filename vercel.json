@@ -1,15 +1,17 @@
 {
   "version": 2,
   "name": "rapid-response-frontend",
-  "builds": [
-    {
-      "src": "dashboard.html",
-      "use": "@vercel/static"
-    }
-  ],
   "routes": [
     {
       "src": "/(.*)",
+      "dest": "/$1"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "status": 404,
       "dest": "/dashboard.html"
     }
   ]
