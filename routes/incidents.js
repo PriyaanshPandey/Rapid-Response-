@@ -2,8 +2,8 @@
 
 const { Router } = require('express');
 const User = require('../models/User');
-const Incident = require('../models/incident');
-const Message = require('../models/message');
+const Incident = require('../models/Incident');
+const Message = require('../models/Message');
 const Log = require('../models/Log');
 const ai = require('../services/ai');
 const whatsapp = require('../services/whatsapp');
