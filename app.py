@@ -1,11 +1,30 @@
+"""
+app.py  —  Floor Plan Processing Server
+Port: 5001
+
+Endpoints:
+  POST /upload-floorplan   multipart image → JSON graph
+  GET  /health
+
+Node naming convention (consistent across ALL floor plans):
+  M1..M4   → 4 largest rooms (assembly/meeting points)
+  1, 2, 3… → remaining rooms in reading order (top→bottom, left→right)
+  CJ_1…    → corridor junction nodes (as many as detected)
+
+The DB and frontend always use these names — they never change.
+"""
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from werkzeug.utils import secure_filename
 import cv2
 import numpy as np
 from skimage.morphology import skeletonize
-import os
 from collections import deque
-from werkzeug.utils import secure_filename
+import os
+import math
+import base64
+import sys
 
 app = Flask(__name__)
 CORS(app)
@@ -15,271 +34,302 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'bmp', 'webp'}
 
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-class DynamicFloorPlanProcessor:
-    """
-    Strategy:
-      1. Detect walkable pixels via thresholding.
-      2. Distance Transform to evaluate room/space sizes.
-      3. Skeletonize corridors.
-      4. Detect junctions (corridor intercepts) and endpoints (rooms).
-      5. Cluster nearby points.
-      6. Sort endpoint clusters by Distance Transform size.
-      7. Top 4 biggest = m1, m2, m3, m4. Rest = 1, 2, 3...
-      8. Trace skeleton using BFS to automatically generate true graph adjacency.
-    """
 
-    def __init__(self, target_w=900, target_h=700):
-        self.target_w = target_w
-        self.target_h = target_h
-        self.img = None
-        self.skeleton = None
-        self.dist_transform = None
-        self.h = self.w = 0
+# ─────────────────────────────────────────────────────────────────────────────
+# CONSTANTS  (tune here if detection is off for a specific floor plan style)
+# ─────────────────────────────────────────────────────────────────────────────
 
-    def load(self, path):
-        img = cv2.imread(path)
-        if img is None:
-            raise ValueError(f"Cannot read {path}")
-        self.img = cv2.resize(img, (self.target_w, self.target_h))
-        self.h, self.w = self.img.shape[:2]
-        return self
+TARGET_W          = 900    # all images are resized to this canvas
+TARGET_H          = 700
+WALKABLE_MIN_GRAY = 150    # pixels brighter than this = floor / corridor
+ROOM_DIST_RATIO   = 0.20   # dist-transform threshold: room_pixel > max*this
+MIN_ROOM_PX       = 300    # ignore blobs smaller than this (px²)
+NUM_MEETING       = 4      # largest N rooms become M1..M4
+MIN_CJ_DIST       = 22     # px: merge skeleton junctions closer than this
+MAX_BFS_STEPS     = 800    # BFS depth cap for junction connectivity
 
-    def _walkable_mask(self):
-        gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
-        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-        _, th = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        white_ratio = np.sum(th == 255) / th.size
-        if white_ratio < 0.4:
-            th = cv2.bitwise_not(th)
 
-        # Auto-Cropping to kill the infinite "white space arrays" outside the walls
-        walls = cv2.bitwise_not(th)
-        coords = cv2.findNonZero(walls)
-        if coords is not None:
-            x, y, w, h = cv2.boundingRect(coords)
-            margin = 10
-            x1, y1 = max(0, x - margin), max(0, y - margin)
-            x2, y2 = min(self.w, x + w + margin), min(self.h, y + h + margin)
-            
-            cleaned_th = np.zeros_like(th)
-            cleaned_th[y1:y2, x1:x2] = th[y1:y2, x1:x2]
-            th = cleaned_th
-            
-            cv2.rectangle(th, (x1, y1), (x2-1, y2-1), 0, margin*2)
+# ─────────────────────────────────────────────────────────────────────────────
+# STEP 1  Load & normalise
+# ─────────────────────────────────────────────────────────────────────────────
 
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-        th = cv2.morphologyEx(th, cv2.MORPH_CLOSE, kernel, iterations=2)
-        th = cv2.morphologyEx(th, cv2.MORPH_OPEN,  kernel, iterations=1)
-        return th
+def load_image(path):
+    img = cv2.imread(path)
+    if img is None:
+        raise FileNotFoundError(f"Cannot read: {path}")
+    return cv2.resize(img, (TARGET_W, TARGET_H), interpolation=cv2.INTER_AREA)
 
-    def compute_distance_transform(self, mask):
-        self.dist_transform = cv2.distanceTransform(mask, cv2.DIST_L2, 5)
 
-    def skeletonise(self, mask):
-        bin01 = (mask > 0).astype(np.uint8)
-        skel = skeletonize(bin01).astype(np.uint8) * 255
-        
-        # Pruning tiny jagged branch nodes (Weird CJs) while saving fat room nodes
-        max_dist = np.max(self.dist_transform) if self.dist_transform is not None else 1
-        prune_thresh = max_dist * 0.3  # Room branches are fat, noise branches are thin
+# ─────────────────────────────────────────────────────────────────────────────
+# STEP 2  Walkable mask  (255 = floor/corridor, 0 = wall)
+# ─────────────────────────────────────────────────────────────────────────────
 
-        for _ in range(15):
-            endpoints = []
-            h, w = skel.shape
-            for y in range(1, h - 1):
-                for x in range(1, w - 1):
-                    if skel[y, x] > 0:
-                        nb = int(skel[y-1,x-1]>0)+int(skel[y-1,x]>0)+int(skel[y-1,x+1]>0)+ \
-                             int(skel[y,  x-1]>0)+                   int(skel[y,  x+1]>0)+ \
-                             int(skel[y+1,x-1]>0)+int(skel[y+1,x]>0)+int(skel[y+1,x+1]>0)
-                        if nb == 1:
-                            endpoints.append((x, y))
-            if not endpoints:
-                break
-            for x, y in endpoints:
-                if self.dist_transform[y, x] < prune_thresh:
-                    skel[y, x] = 0
-                    
-        self.skeleton = skel
+def walkable_mask(img):
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    mask = (gray > WALKABLE_MIN_GRAY).astype(np.uint8) * 255
+    # Close only tiny 1-2 px scan gaps — do NOT merge walls
+    k2 = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, k2, iterations=1)
+    return mask
 
-    def _skeleton_special_pixels(self):
-        sk = self.skeleton
-        h, w = sk.shape
-        junctions, endpoints = [], []
-        for y in range(1, h - 1):
-            for x in range(1, w - 1):
-                if sk[y, x] == 0:
-                    continue
-                nb = int(sk[y-1,x-1]>0)+int(sk[y-1,x]>0)+int(sk[y-1,x+1]>0)+ \
-                     int(sk[y,  x-1]>0)+                   int(sk[y,  x+1]>0)+ \
-                     int(sk[y+1,x-1]>0)+int(sk[y+1,x]>0)+int(sk[y+1,x+1]>0)
-                if nb >= 3:
-                    junctions.append((x, y))
-                elif nb == 1:
-                    endpoints.append((x, y))
-        return junctions, endpoints
 
-    @staticmethod
-    def _cluster(points, radius):
-        if not points:
-            return []
-        pts = list(points)
-        merged, used = [], [False] * len(pts)
-        for i, p in enumerate(pts):
-            if used[i]:
+# ─────────────────────────────────────────────────────────────────────────────
+# STEP 3  Room detection via distance transform
+# ─────────────────────────────────────────────────────────────────────────────
+
+def detect_rooms(mask):
+    dist = cv2.distanceTransform(mask, cv2.DIST_L2, 5)
+    threshold = dist.max() * ROOM_DIST_RATIO
+
+    sure_fg = (dist > threshold).astype(np.uint8) * 255
+    n, labels, stats, centroids = cv2.connectedComponentsWithStats(sure_fg, 8)
+
+    rooms = []
+    for i in range(1, n):
+        area = int(stats[i, cv2.CC_STAT_AREA])
+        bw   = int(stats[i, cv2.CC_STAT_WIDTH])
+        bh   = int(stats[i, cv2.CC_STAT_HEIGHT])
+
+        if area < MIN_ROOM_PX:
+            continue                       # noise / tiny artifact
+        if bw > TARGET_W * 0.9 or bh > TARGET_H * 0.9:
+            continue                       # whole-image background component
+
+        rooms.append({
+            "cx_px": float(centroids[i][0]),
+            "cy_px": float(centroids[i][1]),
+            "area": area, "bw": bw, "bh": bh,
+        })
+
+    return rooms, dist
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STEP 4  Corridor skeleton & junction detection
+# ─────────────────────────────────────────────────────────────────────────────
+
+def corridor_skeleton(mask, dist_map, room_threshold):
+    corridor_mask = ((dist_map <= room_threshold) & (mask > 0)).astype(np.uint8) * 255
+    k = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+    corridor_mask = cv2.dilate(corridor_mask, k, iterations=2)
+    corridor_mask = cv2.bitwise_and(corridor_mask, mask)
+    bin01 = (corridor_mask > 0).astype(np.uint8)
+    return skeletonize(bin01).astype(np.uint8) * 255
+
+
+def skeleton_junctions(sk):
+    h, w = sk.shape
+    pts = []
+    for y in range(1, h - 1):
+        for x in range(1, w - 1):
+            if sk[y, x] == 0:
                 continue
-            cluster = [p]
-            used[i] = True
-            for j in range(i + 1, len(pts)):
-                if used[j]:
-                    continue
-                if abs(p[0]-pts[j][0]) + abs(p[1]-pts[j][1]) < radius:
-                    cluster.append(pts[j])
-                    used[j] = True
-            cx = int(sum(c[0] for c in cluster) / len(cluster))
-            cy = int(sum(c[1] for c in cluster) / len(cluster))
-            merged.append((cx, cy))
-        return merged
+            nb = (int(sk[y-1,x-1]>0) + int(sk[y-1,x]>0) + int(sk[y-1,x+1]>0) +
+                  int(sk[y,  x-1]>0) +                     int(sk[y,  x+1]>0) +
+                  int(sk[y+1,x-1]>0) + int(sk[y+1,x]>0) + int(sk[y+1,x+1]>0))
+            if nb >= 3:
+                pts.append((x, y))
+    return pts
 
-    def _pct(self, x, y):
-        return round(x / self.w * 100, 2), round(y / self.h * 100, 2)
 
-    def trace_adjacency(self, nodes_dict):
-        adjacency = {k: [] for k in nodes_dict.keys()}
-        pixel_to_node = {}
-        for nid, dat in nodes_dict.items():
-            cx, cy = dat['x_px'], dat['y_px']
-            for dy in range(-6, 7):
-                for dx in range(-6, 7):
-                    if dx*dx + dy*dy <= 36:
-                        pixel_to_node[(cx+dx, cy+dy)] = nid
-                        
-        h, w = self.skeleton.shape
-        
-        for start_id, start_dat in nodes_dict.items():
-            sx, sy = start_dat['x_px'], start_dat['y_px']
-            visited = set()
-            queue = deque([(sx, sy)])
-            visited.add((sx, sy))
-            
-            found_neighbors = set()
-            while queue:
-                cx, cy = queue.popleft()
-                
-                if (cx, cy) in pixel_to_node:
-                    reached_id = pixel_to_node[(cx, cy)]
-                    if reached_id != start_id:
-                        found_neighbors.add(reached_id)
-                        continue
-                
-                for dx, dy in [(-1,0), (1,0), (0,-1), (0,1), (-1,-1), (-1,1), (1,-1), (1,1)]:
-                    nx, ny = cx + dx, cy + dy
-                    if 0 <= nx < w and 0 <= ny < h:
-                        if self.skeleton[ny, nx] > 0 and (nx, ny) not in visited:
-                            visited.add((nx, ny))
-                            queue.append((nx, ny))
-                            
-            adjacency[start_id] = list(found_neighbors)
-            
-        # Ensure bidirectional
-        for u in adjacency:
-            for v in adjacency[u]:
-                if u not in adjacency[v]:
-                    adjacency[v].append(u)
-                    
-        return adjacency
+def cluster_points(pts, radius):
+    if not pts:
+        return []
+    used, merged = [False] * len(pts), []
+    for i, p in enumerate(pts):
+        if used[i]:
+            continue
+        cluster = [p]
+        used[i] = True
+        for j in range(i + 1, len(pts)):
+            if not used[j] and math.hypot(p[0]-pts[j][0], p[1]-pts[j][1]) < radius:
+                cluster.append(pts[j])
+                used[j] = True
+        merged.append((int(sum(c[0] for c in cluster) / len(cluster)),
+                       int(sum(c[1] for c in cluster) / len(cluster))))
+    return merged
 
-    def _find_local_maxima(self, dist_map, threshold_ratio=0.5):
-        # Dilate to find local peaks
-        kernel = np.ones((7,7), np.uint8)
-        local_max = cv2.dilate(dist_map, kernel) == dist_map
-        # Filter by intensity to avoid noise in thin corridors
-        peaks = (local_max & (dist_map > (np.max(dist_map) * threshold_ratio)))
-        
-        coords = np.column_stack(np.where(peaks))
-        pts = [(int(c[1]), int(c[0])) for c in coords]
-        return self._cluster(pts, 30)
 
-    def process(self):
-        mask = self._walkable_mask()
-        self.compute_distance_transform(mask)
-        self.skeletonise(mask)
+# ─────────────────────────────────────────────────────────────────────────────
+# STEP 5  Adjacency graph
+# ─────────────────────────────────────────────────────────────────────────────
 
-        # 1. Use Local Maxima to find the "heart" of rooms/spaces
-        # This is much more robust than skeleton endpoints
-        room_peaks = self._find_local_maxima(self.dist_transform, 0.45)
-        
-        # 2. Find junctions for corridor connectivity
-        raw_junctions, _ = self._skeleton_special_pixels()
-        junctions = self._cluster(raw_junctions, 25)
+def bfs_connected(sk, start, goal, max_steps=MAX_BFS_STEPS, gap=6):
+    if math.hypot(start[0]-goal[0], start[1]-goal[1]) > 300:
+        return False
+    h, w = sk.shape
+    visited = {start}
+    queue   = deque([start])
+    steps   = 0
+    while queue and steps < max_steps:
+        cx, cy = queue.popleft()
+        steps += 1
+        if abs(cx-goal[0]) <= gap and abs(cy-goal[1]) <= gap:
+            return True
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                nx, ny = cx + dx, cy + dy
+                if 0 <= nx < w and 0 <= ny < h and (nx, ny) not in visited and sk[ny, nx] > 0:
+                    visited.add((nx, ny))
+                    queue.append((nx, ny))
+    return False
 
-        # Sort room peaks by their "thickness" (distance to wall) to find the biggest ones
-        room_data = []
-        for px, py in room_peaks:
-            size = self.dist_transform[py, px]
-            room_data.append((size, px, py))
-        
-        room_data.sort(key=lambda item: item[0], reverse=True)
 
-        internal_nodes = {}
-        node_positions = {}
+def build_adjacency(node_positions, room_names, cj_pixel_coords, sk):
+    adj = {n: [] for n in node_positions}
 
-        # Name the 4 biggest spaces m1, m2, m3, m4
-        for i in range(min(4, len(room_data))):
-            name = f"m{i+1}"
-            _, px, py = room_data[i]
-            x_pct, y_pct = self._pct(px, py)
-            node_positions[name] = {"x": x_pct, "y": y_pct}
-            internal_nodes[name] = {"x_px": px, "y_px": py}
+    # Room → nearest junction
+    for r_name in room_names:
+        if not cj_pixel_coords:
+            continue
+        d  = node_positions[r_name]
+        rx = d["x"] / 100 * TARGET_W
+        ry = d["y"] / 100 * TARGET_H
 
-        # Name remaining rooms 1, 2, 3...
-        room_counter = 1
-        for i in range(4, len(room_data)):
-            name = str(room_counter)
-            room_counter += 1
-            _, px, py = room_data[i]
-            x_pct, y_pct = self._pct(px, py)
-            node_positions[name] = {"x": x_pct, "y": y_pct}
-            internal_nodes[name] = {"x_px": px, "y_px": py}
+        best_name, best_dist = None, float('inf')
+        for cj_name, (px, py) in cj_pixel_coords.items():
+            dist = math.hypot(rx - px, ry - py)
+            if dist < best_dist:
+                best_dist, best_name = dist, cj_name
 
-        # Name junctions CJ_1, CJ_2...
-        for i, (px, py) in enumerate(junctions):
-            name = f"CJ_{i+1}"
-            x_pct, y_pct = self._pct(px, py)
-            node_positions[name] = {"x": x_pct, "y": y_pct}
-            internal_nodes[name] = {"x_px": px, "y_px": py}
+        if best_name:
+            if best_name not in adj[r_name]:
+                adj[r_name].append(best_name)
+            if r_name not in adj[best_name]:
+                adj[best_name].append(r_name)
 
-        # Crucial: Ensure the found room centers are "snapped" to the skeleton 
-        # so trace_adjacency can find paths to them.
-        for nid in internal_nodes:
-            cx, cy = internal_nodes[nid]['x_px'], internal_nodes[nid]['y_px']
-            # Find closest skeleton pixel
-            skel_pixels = np.column_stack(np.where(self.skeleton > 0))
-            if skel_pixels.size > 0:
-                dists = np.sum((skel_pixels - [cy, cx])**2, axis=1)
-                closest_idx = np.argmin(dists)
-                target_y, target_x = skel_pixels[closest_idx]
-                
-                # Draw a line in skeleton from room peak to skeleton line to bridge gaps
-                cv2.line(self.skeleton, (cx, cy), (int(target_x), int(target_y)), 255, 1)
+    # Junction ↔ junction via skeleton BFS
+    cj_list = list(cj_pixel_coords.items())
+    for i in range(len(cj_list)):
+        for j in range(i + 1, len(cj_list)):
+            n1, p1 = cj_list[i]
+            n2, p2 = cj_list[j]
+            if bfs_connected(sk, p1, p2):
+                if n2 not in adj[n1]:
+                    adj[n1].append(n2)
+                if n1 not in adj[n2]:
+                    adj[n1].append(n2)
 
-        adjacency = self.trace_adjacency(internal_nodes)
+    return {k: v for k, v in adj.items() if v}
 
-        return {
-            "NODE_POSITIONS": node_positions,
-            "NODE_ADJACENCY": adjacency,
-            "metadata": {
-                "total_nodes": len(node_positions),
-                "total_edges": sum(len(v) for v in adjacency.values()) // 2,
-                "detected_rooms": len(room_peaks),
-                "detected_junctions": len(junctions),
-                "strategy": "robust-local-maxima"
-            }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MAIN PIPELINE
+# ─────────────────────────────────────────────────────────────────────────────
+
+def pct(px, py):
+    return round(px / TARGET_W * 100, 1), round(py / TARGET_H * 100, 1)
+
+
+def process_floor_plan(image_path: str) -> dict:
+    img  = load_image(image_path)
+    mask = walkable_mask(img)
+    rooms, dist_map = detect_rooms(mask)
+
+    if not rooms:
+        raise ValueError(
+            "No rooms detected. Make sure your floor plan has light-colored "
+            "floors and dark walls. JPG/PNG both work."
+        )
+
+    room_threshold = dist_map.max() * ROOM_DIST_RATIO
+
+    # ── Name rooms ──────────────────────────────────────────────────────────
+    rooms.sort(key=lambda r: r["area"], reverse=True)
+
+    meeting_rooms = rooms[:NUM_MEETING]
+    regular_rooms = rooms[NUM_MEETING:]
+
+    # Sort regular rooms: top→bottom, then left→right (reading order)
+    regular_rooms.sort(
+        key=lambda r: (int(r["cy_px"] // 80), int(r["cx_px"] // 80))
+    )
+
+    node_positions = {}
+    room_names     = []
+    meeting_points = []
+
+    for i, r in enumerate(meeting_rooms, 1):
+        name = f"M{i}"
+        meeting_points.append(name)
+        room_names.append(name)
+        x, y = pct(r["cx_px"], r["cy_px"])
+        node_positions[name] = {"x": x, "y": y}
+
+    for i, r in enumerate(regular_rooms, 1):
+        name = str(i)
+        room_names.append(name)
+        x, y = pct(r["cx_px"], r["cy_px"])
+        node_positions[name] = {"x": x, "y": y}
+
+    # ── Corridor junctions ───────────────────────────────────────────────────
+    sk           = corridor_skeleton(mask, dist_map, room_threshold)
+    raw_junctions = skeleton_junctions(sk)
+    clustered    = cluster_points(raw_junctions, MIN_CJ_DIST)
+
+    # Discard junctions that landed inside a room centroid
+    def in_any_room(px, py):
+        return any(math.hypot(px - r["cx_px"], py - r["cy_px"]) < 50
+                   for r in rooms)
+
+    cj_pts = [(px, py) for (px, py) in clustered if not in_any_room(px, py)]
+    cj_pts.sort(key=lambda p: (int(p[1] // 60), int(p[0] // 60)))
+
+    cj_pixel_coords = {}
+    for i, (px, py) in enumerate(cj_pts, 1):
+        name = f"CJ_{i}"
+        cj_pixel_coords[name] = (px, py)
+        x, y = pct(px, py)
+        node_positions[name] = {"x": x, "y": y}
+
+    # ── Build adjacency ──────────────────────────────────────────────────────
+    adjacency = build_adjacency(node_positions, room_names, cj_pixel_coords, sk)
+
+    return {
+        "NODE_POSITIONS": node_positions,
+        "NODE_ADJACENCY": adjacency,
+        "MEETING_POINTS": meeting_points,
+        "metadata": {
+            "rooms_total":        len(rooms),
+            "meeting_rooms":      len(meeting_points),
+            "regular_rooms":      len(regular_rooms),
+            "corridor_junctions": len(cj_pts),
+            "total_nodes":        len(node_positions),
+            "total_edges":        sum(len(v) for v in adjacency.values()) // 2,
         }
+    }
 
+
+def draw_result(img, result):
+    """Draws only node names on the image for visualization."""
+    pos = result["NODE_POSITIONS"]
+
+    for name, d in pos.items():
+        # Only label Rooms and Meeting Points (skip hidden/internal nodes if any)
+        if name.startswith("P_") or name.startswith("CH_") or name.startswith("CV_"):
+            continue
+
+        px = int(d["x"]/100*TARGET_W)
+        py = int(d["y"]/100*TARGET_H)
+        
+        # Premium Label styling
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        scale = 0.45
+        thickness = 1
+        (label_w, label_h), baseline = cv2.getTextSize(name, font, scale, thickness)
+        
+        # Center the label on the coordinate
+        lx, ly = px - (label_w // 2), py + (label_h // 2)
+        
+        # Draw small background for text readability (subtle grey/white box)
+        cv2.rectangle(img, (lx-2, ly-label_h-2), (lx+label_w+2, ly+2), (255,255,255), -1)
+        cv2.putText(img, name, (lx, ly), font, scale, (20,20,20), thickness)
+
+    return img
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -290,44 +340,64 @@ class DynamicFloorPlanProcessor:
 def upload_floorplan():
     try:
         if 'image' not in request.files:
-            return jsonify({'error': 'No image file'}), 400
+            return jsonify({'error': 'No image file provided'}), 400
 
         file = request.files['image']
         if not file.filename or not allowed_file(file.filename):
-            return jsonify({'error': 'Invalid file type'}), 400
+            return jsonify({'error': 'Invalid or missing file'}), 400
 
         filename = secure_filename(file.filename)
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
 
-        proc = DynamicFloorPlanProcessor()
-        result = proc.load(filepath).process()
+        try:
+            result = process_floor_plan(filepath)
+            
+            # ── Draw labels on the map ──────────────────────────────────────
+            img_to_draw = load_image(filepath)
+            labeled_img = draw_result(img_to_draw, result)
+            
+            # Convert to base64
+            _, buffer = cv2.imencode('.png', labeled_img)
+            img_base64 = base64.b64encode(buffer).decode('utf-8')
+            
+        finally:
+            if os.path.exists(filepath):
+                os.remove(filepath)
 
-        os.remove(filepath)
-
+        m = result["metadata"]
         return jsonify({
             'success': True,
-            'graph': result,
+            'graph':   result,
+            'labeled_image': f"data:image/png;base64,{img_base64}",
             'message': (
-                f"Mapped {result['metadata']['total_nodes']} dynamic nodes "
-                f"({result['metadata']['detected_junctions']} junctions + "
-                f"{result['metadata']['detected_rooms']} rooms detected)"
+                f"Detected {m['rooms_total']} rooms "
+                f"({m['meeting_rooms']} meeting + {m['regular_rooms']} regular) "
+                f"and {m['corridor_junctions']} corridor junctions. "
+                f"Total {m['total_nodes']} nodes, {m['total_edges']} edges."
             )
         })
 
+    except ValueError as e:
+        return jsonify({'error': str(e), 'success': False}), 422
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': str(e), 'success': False}), 500
 
 
 @app.route('/health', methods=['GET'])
 def health():
-    return jsonify({'status': 'ok', 'strategy': 'dynamic-room-sizing'})
+    return jsonify({
+        'status': 'ok',
+        'node_naming': {
+            'meeting_rooms':      'M1, M2, M3, M4  (4 largest rooms)',
+            'regular_rooms':      '1, 2, 3 …        (reading order)',
+            'corridor_junctions': 'CJ_1, CJ_2 …    (as many as detected)',
+        }
+    })
 
 
 if __name__ == '__main__':
-    print("🚀 Floor Plan Upload Server — canonical-template-mapping strategy")
-    print("📍 http://localhost:5001")
-    print("   Node names are ALWAYS the same. Only positions update.")
-    app.run(debug=True, port=5001, host='0.0.0.0')
+    port = int(os.environ.get('PORT', 5001))
+    app.run(debug=False, port=port, host='0.0.0.0')

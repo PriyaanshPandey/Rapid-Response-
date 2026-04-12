@@ -592,7 +592,15 @@
 
 <script>
 let fireRadius = 15; // % distance threshold (tune this)
-  const API_BASE = 'http://localhost:5000';
+  
+  // ── PRODUCTION URL CONFIG ──
+  // These can be overriden by a config.js file on your web server
+  const CONFIG = window.CONFIG || {
+    NODE_API: 'http://localhost:5000',
+    PYTHON_API: 'http://localhost:5001'
+  };
+
+  const API_BASE = CONFIG.NODE_API;
 function getDistance(n1, n2) {
   const p1 = NODE_POSITIONS[n1];
   const p2 = NODE_POSITIONS[n2];
@@ -692,7 +700,7 @@ async function processFloorPlan() {
     formData.append('image', uploadedFile);
     
     try {
-        const response = await fetch('http://localhost:5001/upload-floorplan', {
+        const response = await fetch(`${CONFIG.PYTHON_API}/upload-floorplan`, {
             method: 'POST',
             body: formData
         });
@@ -708,19 +716,24 @@ async function processFloorPlan() {
             
             if (confirm(`Generated ${generatedGraph.metadata.total_nodes} nodes and ${generatedGraph.metadata.total_edges} connections.\nReplace current map with generated graph?`)) {
                 // Replace graph data
+               Object.keys(NODE_POSITIONS).forEach(k => delete NODE_POSITIONS[k]);
+                Object.keys(NODE_ADJACENCY).forEach(k => delete NODE_ADJACENCY[k]);
                 Object.assign(NODE_POSITIONS, generatedGraph.NODE_POSITIONS);
                 Object.assign(NODE_ADJACENCY, generatedGraph.NODE_ADJACENCY);
+                MEETING_POINTS = generatedGraph.MEETING_POINTS || ["M1","M2","M3","M4"];
+                GRAPH = NODE_ADJACENCY; // re-point GRAPH at updated object
+ 
                 
                 // ✅ Update the displayed floor map image
                 const mapImage = document.querySelector('#map-wrapper img');
-                const imageUrl = URL.createObjectURL(uploadedFile);
-                mapImage.src = imageUrl;
+                mapImage.src = data.labeled_image;
                 
                 // ✅ Save to localStorage
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    localStorage.setItem('uploadedFloorPlan', e.target.result);
-                    localStorage.setItem('uploadedGraph', JSON.stringify(generatedGraph));
+                  localStorage.setItem('floorPlanImage', e.target.result);
+                    localStorage.setItem('floorPlanGraph', JSON.stringify(generatedGraph));
+ 
                     console.log('✅ Saved to localStorage');
                 };
                 reader.readAsDataURL(uploadedFile);
@@ -802,48 +815,49 @@ async function updateGuestStatusByFire() {
 
 // Load saved floor plan from localStorage on page load
 function loadSavedFloorPlan() {
-    const savedImage = localStorage.getItem('uploadedFloorPlan');
-    const savedGraph = localStorage.getItem('uploadedGraph');
-    
-    if (savedImage && savedGraph) {
+    const savedImage = localStorage.getItem('floorPlanImage');
+    const savedGraph = localStorage.getItem('floorPlanGraph');
+ 
+    if (!savedImage || !savedGraph) return;
+ 
+    try {
         const graph = JSON.parse(savedGraph);
-        
-        // Replace the graph data
+ 
+        // Clear old graph entirely, load new one
+        Object.keys(NODE_POSITIONS).forEach(k => delete NODE_POSITIONS[k]);
+        Object.keys(NODE_ADJACENCY).forEach(k => delete NODE_ADJACENCY[k]);
         Object.assign(NODE_POSITIONS, graph.NODE_POSITIONS);
         Object.assign(NODE_ADJACENCY, graph.NODE_ADJACENCY);
-        
-        // Update the displayed image
-        const mapImage = document.querySelector('#map-wrapper img');
-        mapImage.src = savedImage;
-        
-        // Rebuild GRAPH connections
-        Object.keys(NODE_ADJACENCY).forEach(node => {
-            NODE_ADJACENCY[node].forEach(adj => {
-                if (!NODE_ADJACENCY[adj]) NODE_ADJACENCY[adj] = [];
-                if (!NODE_ADJACENCY[adj].includes(node)) {
-                    NODE_ADJACENCY[adj].push(node);
-                }
-            });
-        });
-        
-        // Update simulation buttons
-        document.getElementById('sim-node-grid').innerHTML = '';
-        Object.keys(NODE_POSITIONS).forEach(n => {
-            if (!n.startsWith('P_') && !n.startsWith('CJ_') && !n.startsWith('CH_') && !n.startsWith('CV_')) {
-                const btn = document.createElement('button');
-                btn.className = 'sim-node-btn';
-                btn.textContent = n.charAt(0).toUpperCase() + n.slice(1);
-                btn.onclick = () => selectSimNode(n);
-                document.getElementById('sim-node-grid').appendChild(btn);
-            }
-        });
-        
-        console.log('✅ Loaded saved floor plan with', Object.keys(NODE_POSITIONS).length, 'nodes');
+        MEETING_POINTS = graph.MEETING_POINTS || ["M1","M2","M3","M4"];
+        GRAPH = NODE_ADJACENCY;
+ 
+        // Update map image
+        document.querySelector('#map-wrapper img').src = savedImage;
+ 
+        // Rebuild sim node picker — show all nodes (M1-M4, 1-N, CJ_N)
+        rebuildSimNodeGrid();
+ 
+        console.log('✅ Loaded floor plan:', Object.keys(NODE_POSITIONS).length,
+                    'nodes, meeting:', MEETING_POINTS);
         refresh();
+    } catch(e) {
+        console.warn('Could not restore floor plan:', e);
     }
 }
+ 
+ function rebuildSimNodeGrid() {
+    const grid = document.getElementById('sim-node-grid');
+    grid.innerHTML = '';
+    Object.keys(NODE_POSITIONS).forEach(n => {
+        const btn = document.createElement('button');
+        btn.className   = 'sim-node-btn';
+        btn.textContent = n;
+        btn.onclick     = () => selectSimNode(n);
+        grid.appendChild(btn);
+    });
+}
 
-  const NODE_POSITIONS = {
+  let NODE_POSITIONS = {
   // ── CORRIDOR JUNCTIONS (where corridors cross) ──
   "CJ_TL": { x:10, y:28 },  // top-left corner
   "CJ_TM": { x:50, y:25 },  // top-center (near staircase/exit)
@@ -943,7 +957,7 @@ function loadSavedFloorPlan() {
   "fireextinguisher": { x:8,  y:88 },
 };
 
- const NODE_ADJACENCY = {
+ let NODE_ADJACENCY = {
   // ========== HORIZONTAL CORRIDORS WITH MIDPOINTS ==========
   // Top corridor
   "CJ_TL": ["P_T1", "CH_TL_MID"],
@@ -1338,6 +1352,14 @@ await Promise.allSettled([runEvacuation(newMeetingPoint), runRescue(newMeetingPo
     if (!res.ok) throw new Error(`POST ${path} → ${res.status}`);
     return res.json();
   }
+  async function apiPatch(path, body) {
+    const res = await fetch(API_BASE + path, {
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error(`PATCH ${path} → ${res.status}`);
+    return res.json();
+  }
   const delay = ms => new Promise(r => setTimeout(r, ms));
 
   // ── Render functions ──
@@ -1383,36 +1405,92 @@ await Promise.allSettled([runEvacuation(newMeetingPoint), runRescue(newMeetingPo
           </li>`).join('');
   }
 
+  function getRoomNodes() {
+    return Object.keys(NODE_POSITIONS)
+      .filter(n => !n.startsWith('CJ_') && !n.startsWith('CH_') && !n.startsWith('CV_') && !n.startsWith('P_') && n !== 'medkit' && n !== 'fireextinguisher')
+      .sort((a, b) => {
+        if (a.startsWith('M') && !b.startsWith('M')) return -1;
+        if (!a.startsWith('M') && b.startsWith('M')) return 1;
+        return a.localeCompare(b, undefined, {numeric: true});
+      });
+  }
+
   function renderStaff(users) {
     const staff = users.filter(u => u.type==='staff');
     const el    = document.getElementById('staff-list');
     if (!staff.length) { el.innerHTML = '<div class="empty-state">No staff registered</div>'; return; }
+    
+    const roomNodes = getRoomNodes();
     const ac = s => s==='moving'?'avatar-blue':s==='help'?'avatar-red':s==='safe'?'avatar-green':'avatar-amber';
     const sb = s => { const m={safe:'badge-success',moving:'badge-info',help:'badge-danger',idle:'badge-idle'}; return `<span class="badge ${m[s]||'badge-idle'}">${s.toUpperCase()}</span>`; };
-    el.innerHTML = staff.map(u => `
+    
+    el.innerHTML = staff.map(u => {
+      const options = roomNodes.map(node => 
+        `<option value="${node}" ${u.node === node ? 'selected' : ''}>${node}</option>`
+      ).join('');
+
+      return `
       <div class="staff-row">
         <div class="avatar ${ac(u.status)}">${u.name.slice(0,2).toUpperCase()}</div>
         <div class="staff-info">
           <div class="staff-name">${u.name}</div>
-          <div class="staff-task"><span class="gps-dot"></span>${u.role||'Staff'} — Node ${u.node||'?'}${u.assignedTo?` → ${u.assignedTo}`:''}</div>
+          <div class="staff-task">
+            <span class="gps-dot"></span>
+            <span style="opacity:0.7">${u.role||'Staff'} at </span>
+            <select onchange="updateUserNode('${u._id}', this.value)" 
+                    ${simulationRunning ? 'disabled' : ''}
+                    style="background:rgba(255,100,0,0.1); color:var(--warning); border:1px solid rgba(245,158,11,0.2); border-radius:4px; font-size:10px; font-weight:700; padding:1px 4px; outline:none; cursor:pointer;">
+              ${options}
+            </select>
+            ${u.assignedTo?` → ${u.assignedTo.slice(-4)}`:''}
+          </div>
         </div>
         ${sb(u.status)}
-      </div>`).join('');
+      </div>`;
+    }).join('');
   }
 
   function renderGuestList(users) {
     const guests = users.filter(u => u.type==='guest');
     const el     = document.getElementById('guest-full-list');
     if (!guests.length) { el.innerHTML = '<div class="empty-state">No guests registered</div>'; return; }
+    
+    const roomNodes = getRoomNodes();
     const bm = {safe:'badge-success',help:'badge-danger',moving:'badge-info',idle:'badge-idle'};
-    el.innerHTML = guests.map(u => `
+    
+    el.innerHTML = guests.map(u => {
+      const options = roomNodes.map(node => 
+        `<option value="${node}" ${u.node === node ? 'selected' : ''}>${node}</option>`
+      ).join('');
+
+      return `
       <div class="priority-row">
         <div class="priority-info">
           <div class="priority-name">${u.name}</div>
-          <div class="priority-meta">Node ${u.node||'?'} · ${u.phone}</div>
+          <div class="priority-meta">
+            <select class="guest-node-select" 
+                    onchange="updateUserNode('${u._id}', this.value)" 
+                    ${simulationRunning ? 'disabled' : ''}
+                    style="background:rgba(255,255,255,0.05); color:var(--text-gray); border:1px solid var(--border); border-radius:4px; font-size:11px; padding:2px 4px; outline:none; cursor:pointer;">
+              ${options}
+            </select>
+            · ${u.phone}
+          </div>
         </div>
         <span class="badge ${bm[u.status]||'badge-idle'}">${u.status.toUpperCase()}</span>
-      </div>`).join('');
+      </div>`;
+    }).join('');
+  }
+
+  async function updateUserNode(userId, newNode) {
+    try {
+      await apiPatch(`/api/users/${userId}`, { node: newNode });
+      await logAction(`Admin reassigned guest to Node ${newNode}`);
+      await refresh();
+    } catch (e) {
+      console.error('Failed to update node:', e);
+      alert('Failed to update node. Check console.');
+    }
   }
 
   function renderMapDots(users) {
@@ -1561,8 +1639,7 @@ async function logAction(msg) {
   }
 function getFarthestNodeFromFire() {
   // Only these four nodes are allowed as meeting points
-  const CANDIDATE_NODES = ["m1", "m2", "m3", "m4"];
-
+  const CANDIDATE_NODES = MEETING_POINTS.length ? MEETING_POINTS : ["m1","m2","m3","m4"];
   let maxDist = -1;
   let bestNode = null;
 
@@ -1874,7 +1951,8 @@ Object.keys(NODE_ADJACENCY).forEach(node => {
     }
   });
 });
-const GRAPH = NODE_ADJACENCY;
+let MEETING_POINTS = ["m1","m2","m3","m4"]; // updated on floor plan upload
+let GRAPH = NODE_ADJACENCY;
 
 function getSafeGraph(blockedNodes) {
   const g = {};
@@ -2199,8 +2277,8 @@ async function sendRescue(userId, node, name, btn) {
 function resetToDefaultMap() {
     if (confirm('⚠️ This will reset to the original floor plan and remove your uploaded map. Continue?')) {
         // Clear localStorage
-        localStorage.removeItem('uploadedFloorPlan');
-        localStorage.removeItem('uploadedGraph');
+        localStorage.removeItem('floorPlanImage');
+        localStorage.removeItem('floorPlanGraph');
         
         // Reload the page to restore original state
         location.reload();

@@ -20,7 +20,7 @@ connectDB();
 // Allow frontend to call the API
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,DELETE,PATCH,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
@@ -94,8 +94,9 @@ app.use((err, _req, res, _next) => {
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────────
-app.listen(PORT, () => {
-  console.log(` Server running on port ${PORT}`);
+const port = process.env.PORT || PORT;
+app.listen(port, () => {
+  console.log(` Server running on port ${port}`);
 });
 
 module.exports = app;
