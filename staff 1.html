@@ -3,612 +3,143 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Staff-1 Rescue Command — Emergency Command Center POV for Rescue Staff." />
-  <title>Staff‑1 View — Rescue Command</title>
-
+  <script src="config.js"></script>
+  <title>Staff‑1 — RAPID RESPONSE Rescue POV</title>
   <style>
-    /* ============================================================
-       CSS VARIABLES — Shared with dashboard.html
-       ============================================================ */
     :root {
-      --danger:      #ff4d4d;
-      --success:     #22c55e;
-      --warning:     #f59e0b;
-      --info:        #38bdf8;
-      --bg-primary:  #0d0d0d;
-      --bg-card:     #161616;
-      --border:      #2a2a2a;
-      --text-white:  #ffffff;
-      --text-gray:   #9ca3af;
-      --text-muted:  #6b7280;
-      --radius:      8px;
-      --padding:     14px;
+      --danger: #ff4d4d; --success: #22c55e; --warning: #f59e0b; --info: #38bdf8;
+      --bg-primary: #0d0d0d; --bg-card: #161616; --border: #2a2a2a;
+      --text-white: #ffffff; --text-gray: #9ca3af; --text-muted: #6b7280;
+      --radius: 8px; --padding: 14px;
     }
-
-    /* ============================================================
-       RESET & BASE
-       ============================================================ */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    html, body {
-      height: 100%;
-      background-color: var(--bg-primary);
-      color: var(--text-white);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      font-size: 14px;
-      line-height: 1.5;
-      overflow: hidden;
+    body {
+      background: var(--bg-primary); color: var(--text-white);
+      font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh;
+      display: flex; flex-direction: column;
     }
-
-    /* ============================================================
-       ANIMATIONS
-       ============================================================ */
-    @keyframes blink-amber {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.3; }
-    }
-    @keyframes pulse-border-amber {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(245,158,11,0); }
-      50% { box-shadow: 0 0 10px rgba(245,158,11,0.4); }
-    }
-    @keyframes fade-in-up {
-      from { opacity: 0; transform: translateY(8px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    /* ============================================================
-       PAGE LAYOUT
-       ============================================================ */
-    .page-wrapper {
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      overflow: hidden;
-    }
-
-    /* Top header bar */
-    .pov-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: var(--bg-card);
-      border-bottom: 1px solid var(--border);
-      padding: 10px 20px;
-      flex-shrink: 0;
-    }
-
-    .pov-header-left {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .pov-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 12px;
-      border-radius: 4px;
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      background: rgba(245,158,11,0.12);
-      color: var(--warning);
-      border: 1px solid rgba(245,158,11,0.35);
-      animation: pulse-border-amber 2.5s infinite;
-    }
-
-    .pov-badge-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--warning);
-      animation: blink-amber 1.2s infinite;
-    }
-
-    .pov-title {
-      font-size: 18px;
-      font-weight: 800;
-      color: var(--text-white);
-      letter-spacing: -0.01em;
-    }
-
-    .pov-subtitle {
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-
-    .btn-back {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 7px 16px;
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,0.03);
-      color: var(--text-gray);
-      font-size: 12px;
-      font-weight: 600;
-      text-decoration: none;
-      transition: background 0.2s, border-color 0.2s, color 0.2s;
-    }
-
-    .btn-back:hover {
-      background: rgba(255,255,255,0.07);
-      border-color: var(--text-gray);
-      color: var(--text-white);
-    }
-
-    .btn-back:focus {
-      outline: 2px solid var(--info);
-      outline-offset: 2px;
-    }
-
-    /* ============================================================
-       MAIN SPLIT — Map (70%) + Right Panel (30%)
-       ============================================================ */
-    .pov-body {
-      flex: 1;
-      display: flex;
-      gap: 0;
-      overflow: hidden;
-      min-height: 0;
-    }
-
-    /* LEFT — Live Map Area */
-    .rescue-map-wrapper {
-      width: 60%;
-      flex-shrink: 0;
-      position: relative;
-      background: #0a0a0a;
-      border-right: 1px solid var(--border);
-      overflow: hidden;
-    }
-
-    /* BACKEND: inject map tiles / overlay canvas into #rescue-map */
-    #rescue-map {
-      width: 100%;
-      height: 100%;
-      position: relative;
-    }
-
-    .map-floor-img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      display: block;
-      background: #000;
-    }
-
-    /* Scanline overlay — visual effect */
-    #rescue-map::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: repeating-linear-gradient(
-        to bottom,
-        transparent 0, transparent 4px,
-        rgba(255,255,255,0.018) 5px
-      );
-      pointer-events: none;
-      z-index: 5;
-    }
-
-    /* Corner live badge on map */
-    .map-live-chip {
-      position: absolute;
-      top: 14px;
-      left: 14px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(0,0,0,0.75);
-      border: 1px solid rgba(245,158,11,0.35);
-      border-radius: 4px;
-      padding: 5px 10px;
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--warning);
-      z-index: 20;
-      letter-spacing: 0.06em;
-    }
-
-    .map-live-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--warning);
-      animation: blink-amber 1.2s infinite;
-    }
-
-    /* BACKEND hint overlay */
-    .map-backend-hint {
-      position: absolute;
-      bottom: 0; left: 0; right: 0;
-      padding: 12px 16px;
-      background: linear-gradient(to top, rgba(0,0,0,0.85), transparent);
-      font-size: 12px;
-      color: var(--text-muted);
-      z-index: 10;
-    }
-
-    /* BACKEND: overlay elements to indicate rescue zones */
-    .rescue-zone-hint {
-      position: absolute;
-      bottom: 40px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(245,158,11,0.08);
-      border: 1px dashed rgba(245,158,11,0.3);
-      border-radius: 6px;
-      padding: 10px 22px;
-      text-align: center;
-      color: rgba(245,158,11,0.6);
-      font-size: 12px;
-      z-index: 10;
-      pointer-events: none;
-    }
-
-    /* RIGHT — Instruction Panel */
-    .rescue-panel {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-      overflow-y: auto;
-      background: var(--bg-primary);
-      padding: 14px;
-      gap: 12px;
-    }
-
-    /* Scrollbar for right panel */
-    .rescue-panel::-webkit-scrollbar { width: 5px; }
-    .rescue-panel::-webkit-scrollbar-track { background: var(--bg-primary); }
-    .rescue-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-
-    /* ============================================================
-       PANEL CARDS
-       ============================================================ */
-    .panel-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 13px 14px;
-      animation: fade-in-up 0.4s ease-out both;
-    }
-
-    .panel-card:nth-child(1) { animation-delay: 0.05s; }
-    .panel-card:nth-child(2) { animation-delay: 0.12s; }
-    .panel-card:nth-child(3) { animation-delay: 0.19s; }
-    .panel-card:nth-child(4) { animation-delay: 0.26s; }
-    .panel-card:nth-child(5) { animation-delay: 0.33s; }
-
-    .panel-card-title {
-      font-size: 10px;
-      font-weight: 800;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      margin-bottom: 10px;
-    }
-
-    /* Assignment card highlight */
-    .assignment-card {
-      border-left: 3px solid var(--warning);
-    }
-
-    .assignment-text {
-      font-size: 15px;
-      font-weight: 700;
-      color: var(--text-white);
-      line-height: 1.4;
-    }
-
-    .assignment-sub {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
-
-    /* Priority guests list */
-    .priority-list {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    /* BACKEND: populate #rescue-priority-list with <li> items */
-    .priority-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 8px 10px;
-      background: rgba(255,255,255,0.02);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-    }
-
-    .priority-room {
-      font-size: 13px;
-      font-weight: 800;
-      color: var(--warning);
-      width: 36px;
-      flex-shrink: 0;
-    }
-
-    .priority-name {
-      flex: 1;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text-white);
-    }
-
-    .priority-tag {
-      font-size: 10px;
-      font-weight: 700;
-      padding: 2px 7px;
-      border-radius: 3px;
-      letter-spacing: 0.05em;
-    }
-
-    .tag-wheelchair { background: rgba(56,189,248,0.12); color: var(--info); border: 1px solid rgba(56,189,248,0.25); }
-    .tag-elderly    { background: rgba(245,158,11,0.12); color: var(--warning); border: 1px solid rgba(245,158,11,0.25); }
-    .tag-child      { background: rgba(34,197,94,0.12); color: var(--success); border: 1px solid rgba(34,197,94,0.25); }
-
-    /* Route list */
-    .route-list {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 7px;
-    }
-
-    /* BACKEND: populate #rescue-route-list with <li> items */
-    .route-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-      font-size: 13px;
-      color: var(--text-white);
-    }
-
-    .route-bullet {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--success);
-      flex-shrink: 0;
-      margin-top: 6px;
-      box-shadow: 0 0 6px rgba(34,197,94,0.5);
-    }
-
-    /* Avoid list */
-    .avoid-list {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 7px;
-    }
-
-    /* BACKEND: populate #rescue-avoid-list with <li> items */
-    .avoid-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-      font-size: 13px;
-      color: var(--danger);
-    }
-
-    .avoid-bullet {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--danger);
-      flex-shrink: 0;
-      margin-top: 6px;
-      box-shadow: 0 0 6px rgba(255,77,77,0.5);
-    }
-
-    /* Action Buttons */
-    .actions-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    /* BACKEND: #rescue-actions buttons trigger API calls */
-    .action-btn {
-      width: 100%;
-      padding: 10px 14px;
-      border-radius: var(--radius);
-      border: 1px solid transparent;
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
-      letter-spacing: 0.03em;
-      transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-
-    .action-btn:focus {
-      outline: 2px solid var(--info);
-      outline-offset: 2px;
-    }
-
-    .action-btn:active { transform: scale(0.97); }
-
-    .btn-reached {
-      background: rgba(56,189,248,0.1);
-      border-color: rgba(56,189,248,0.35);
-      color: var(--info);
-    }
-    .btn-reached:hover {
-      background: rgba(56,189,248,0.18);
-      box-shadow: 0 0 10px rgba(56,189,248,0.2);
-    }
-
-    .btn-rescued {
-      background: rgba(34,197,94,0.1);
-      border-color: rgba(34,197,94,0.35);
-      color: var(--success);
-    }
-    .btn-rescued:hover {
-      background: rgba(34,197,94,0.18);
-      box-shadow: 0 0 10px rgba(34,197,94,0.2);
-    }
-
-    .btn-backup {
-      background: rgba(255,77,77,0.1);
-      border-color: rgba(255,77,77,0.35);
-      color: var(--danger);
-    }
-    .btn-backup:hover {
-      background: rgba(255,77,77,0.18);
-      box-shadow: 0 0 10px rgba(255,77,77,0.2);
-    }
+    header { background: var(--bg-card); border-bottom: 1px solid var(--border); padding: 10px 20px; display: flex; align-items: center; justify-content: space-between; }
+    .badge { padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 800; background: rgba(255,77,77,0.1); color: var(--danger); border: 1px solid rgba(255,77,77,0.3); }
+    .main { flex: 1; display: flex; overflow: hidden; }
+    .map-area { width: 65%; position: relative; background: #000; border-right: 1px solid var(--border); }
+    .side-panel { flex: 1; padding: 15px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
+    .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 15px; }
+    .card-title { font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px; }
+    .assignment-text { font-size: 16px; font-weight: 700; }
+    .btn-action { width: 100%; padding: 12px; border-radius: 6px; border: 1px solid var(--border); background: rgba(255,255,255,0.05); color: #fff; font-weight: 700; cursor: pointer; margin-bottom: 8px; transition: all 0.2s; }
+    .btn-action:hover { background: rgba(255,255,255,0.1); border-color: var(--info); }
+    .target-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .map-floor { width: 100%; height: 100%; object-fit: contain; opacity: 0.8; }
+    .dot { position: absolute; width: 12px; height: 12px; border-radius: 50%; transform: translate(-50%,-50%); z-index: 20; }
+    .dot-target { background: var(--danger); box-shadow: 0 0 10px var(--danger); }
+    .dot-me { background: #fff; border: 2px solid var(--info); box-shadow: 0 0 10px var(--info); }
   </style>
 </head>
 <body>
-<div class="page-wrapper">
-
-  <!-- ============================================================
-       PAGE HEADER
-       ============================================================ -->
-  <header class="pov-header">
-    <div class="pov-header-left">
-      <div class="pov-badge">
-        <span class="pov-badge-dot"></span>RESCUE ACTIVE
-      </div>
+  <header>
+    <div style="display:flex; align-items:center; gap:12px">
+      <div class="badge">RESCUE ACTIVE</div>
       <div>
-        <div class="pov-title">Staff‑1 View — Rescue Command</div>
-        <div class="pov-subtitle">Rescue Staff POV &nbsp;·&nbsp; Hotel Level 3</div>
+        <div style="font-weight:800; font-size:16px;">RAPID RESPONSE</div>
+        <div style="font-size:11px; color:var(--text-muted)">Staff‑1 (Rescue POV)</div>
       </div>
     </div>
-    <a href="dashboard.html" class="btn-back">
-      ← Back to Dashboard
-    </a>
+    <a href="dashboard.html" style="color:var(--text-gray); text-decoration:none; font-size:12px; font-weight:600">← Exit POV</a>
   </header>
 
-  <!-- ============================================================
-       BODY SPLIT
-       ============================================================ -->
-  <div class="pov-body">
+  <div class="main">
+    <div class="map-area" id="map-container">
+      <img src="floor-map.png" class="map-floor" />
+      <div id="dots-layer" style="position:absolute; inset:0"></div>
+    </div>
+    <div class="side-panel">
+      <div class="card" style="border-left: 4px solid var(--danger)">
+        <div class="card-title">Priority Assignment</div>
+        <div id="current-task" class="assignment-text">Searching for active help requests...</div>
+      </div>
 
-    <!-- LEFT — Live Map (70%) -->
-    <!-- BACKEND: mount live map tiles, guest markers, and route overlays into #rescue-map -->
-    <div class="rescue-map-wrapper" id="rescue-map-wrapper">
-      <div id="rescue-map">
-
-        <!-- Floor plan image — same asset as dashboard -->
-        <img src="floor-map.png" alt="Level 3 Floor Map" class="map-floor-img"
-          onerror="this.style.display='none'" />
-
-        <!-- LIVE chip -->
-        <div class="map-live-chip">
-          <span class="map-live-dot"></span>LIVE MAP
+      <div class="card">
+        <div class="card-title">Guests Awaiting Rescue</div>
+        <div id="target-list">
+          <div style="color:var(--text-muted); font-size:12px;">No active targets found.</div>
         </div>
+      </div>
 
-        <!-- Rescue zone placeholder (remove once overlays are injected) -->
-        <!-- BACKEND: replace with dynamic zone highlights for rescue targets -->
-
-
-        <!-- Backend integration note at bottom -->
-
-
+      <div class="card">
+        <div class="card-title">Field Actions</div>
+        <button class="btn-action" onclick="updateLocation()">📍 Log My Current Node</button>
+        <button class="btn-action" style="color:var(--success); border-color:var(--success)" onclick="completeRescue()">✅ Mark Target as Rescued</button>
+        <button class="btn-action" style="color:var(--danger); border-color:var(--danger)" onclick="alert('Backup requested.')">🚨 Request Backup</button>
       </div>
     </div>
+  </div>
 
-    <!-- RIGHT — Rescue Instructions (30%) -->
-    <div class="rescue-panel" id="rescue-panel">
+  <script>
+    const CONFIG = window.CONFIG || { NODE_API: 'http://localhost:5000' };
+    const API_BASE = CONFIG.NODE_API;
+    const MY_NAME = "Staff-1";
 
-      <!-- Card 1: Current Assignment -->
-      <!-- BACKEND: populate #rescue-current-task with live assignment data -->
-      <div class="panel-card assignment-card" id="rescue-current-task">
-        <div class="panel-card-title">Current Assignment</div>
-        <div class="assignment-text">Rescue guests in Rooms 313‑316</div>
-        <div class="assignment-sub">Level 3 · North Wing · 4 rooms assigned</div>
-      </div>
+    let allUsers = [];
+    let myUser = null;
 
-      <!-- Card 2: Priority Guests -->
-      <!-- BACKEND: populate #rescue-priority-list with <li class="priority-item"> entries -->
-      <div class="panel-card">
-        <div class="panel-card-title">Priority Guests</div>
-        <ul class="priority-list" id="rescue-priority-list">
-          <li class="priority-item">
-            <span class="priority-room">313</span>
-            <span class="priority-name">Ms. Alva</span>
-            <span class="priority-tag tag-wheelchair">Wheelchair</span>
-          </li>
-          <li class="priority-item">
-            <span class="priority-room">314</span>
-            <span class="priority-name">Mr. Lee</span>
-            <span class="priority-tag tag-elderly">Elderly</span>
-          </li>
-          <li class="priority-item">
-            <span class="priority-room">315</span>
-            <span class="priority-name">B. Shah</span>
-            <span class="priority-tag tag-child">Child</span>
-          </li>
-          <li class="priority-item">
-            <span class="priority-room">316</span>
-            <span class="priority-name">S. Singh</span>
-            <span class="priority-tag tag-elderly">Elderly</span>
-          </li>
-        </ul>
-      </div>
+    async function fetchData() {
+      try {
+        const res = await fetch(`${API_BASE}/api/users`);
+        allUsers = await res.json();
+        myUser = allUsers.find(u => u.name === MY_NAME);
+        render();
+      } catch (e) { console.error(e); }
+    }
 
-      <!-- Card 3: Route & Corridors to Follow -->
-      <!-- BACKEND: populate #rescue-route-list with route nodes from pathfinding API -->
-      <div class="panel-card">
-        <div class="panel-card-title">Route &amp; Corridors to Follow</div>
-        <ul class="route-list" id="rescue-route-list">
-          <li class="route-item"><span class="route-bullet"></span>Enter via West Stairwell (Level 3)</li>
-          <li class="route-item"><span class="route-bullet"></span>Proceed through Corridor A (North Wing)</li>
-          <li class="route-item"><span class="route-bullet"></span>Rooms 313‑316 on the left side</li>
-          <li class="route-item"><span class="route-bullet"></span>Exit via West Stairwell to Conference Hall</li>
-        </ul>
-      </div>
+    function render() {
+      const targets = allUsers.filter(u => u.type === 'guest' && u.status === 'help');
+      
+      // Update Task
+      const taskDiv = document.getElementById('current-task');
+      if (targets.length) {
+        taskDiv.innerText = `Rescue ${targets[0].name} @ Room ${targets[0].node || '??'}`;
+      } else {
+        taskDiv.innerText = "All Clear — Wait for Dispatch";
+      }
 
-      <!-- Card 4: Areas & Actions to Avoid -->
-      <!-- BACKEND: populate #rescue-avoid-list with hazard data from incident API -->
-      <div class="panel-card">
-        <div class="panel-card-title">Areas / Actions to Avoid</div>
-        <ul class="avoid-list" id="rescue-avoid-list">
-          <li class="avoid-item"><span class="avoid-bullet"></span>⛔ Avoid East Corridor B (Fire &amp; Debris)</li>
-          <li class="avoid-item"><span class="avoid-bullet"></span>⛔ Do NOT use Service Lift L12</li>
-          <li class="avoid-item"><span class="avoid-bullet"></span>⛔ Do not approach Room 315 directly — smoke active</li>
-        </ul>
-      </div>
+      // Update List
+      const listDiv = document.getElementById('target-list');
+      if (targets.length) {
+        listDiv.innerHTML = targets.map(t => `
+          <div class="target-item">
+            <span>${t.name}</span>
+            <span style="color:var(--warning); font-weight:800">${t.node || '??'}</span>
+          </div>
+        `).join('');
+      } else {
+        listDiv.innerHTML = '<div style="color:var(--text-muted); font-size:12px;">Scanning floor...</div>';
+      }
+    }
 
-      <!-- Card 5: Action Buttons -->
-      <!-- BACKEND: each button triggers an API call to update rescue status -->
-      <div class="panel-card">
-        <div class="panel-card-title">Actions</div>
-        <div class="actions-grid" id="rescue-actions">
-          <!-- BACKEND: onclick → POST /api/rescue/reached { room, staffId } -->
-          <button class="action-btn btn-reached" onclick="console.log('[RESCUE] Reached Room')">
-            📍 Reached Room
-          </button>
-          <!-- BACKEND: onclick → POST /api/rescue/rescued { guestId, staffId } -->
-          <button class="action-btn btn-rescued" onclick="console.log('[RESCUE] Guest Rescued')">
-            ✅ Guest Rescued
-          </button>
-          <!-- BACKEND: onclick → POST /api/rescue/backup { location, staffId } -->
-          <button class="action-btn btn-backup" onclick="console.log('[RESCUE] Need Backup')">
-            🚨 Need Backup
-          </button>
-        </div>
-      </div>
+    async function updateLocation() {
+      const node = prompt("Enter current Node ID:", myUser ? myUser.node : "");
+      if (!node || !myUser) return;
+      await fetch(`${API_BASE}/api/users/${myUser._id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ node, status: 'moving' })
+      });
+      fetchData();
+    }
 
-    </div><!-- end .rescue-panel -->
+    async function completeRescue() {
+      const target = allUsers.find(u => u.type === 'guest' && u.status === 'help');
+      if (!target) return alert("No target selected.");
+      await fetch(`${API_BASE}/api/users/${target._id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'safe' })
+      });
+      fetchData();
+    }
 
-  </div><!-- end .pov-body -->
-
-</div><!-- end .page-wrapper -->
+    setInterval(fetchData, 4000);
+    fetchData();
+  </script>
 </body>
 </html>
