@@ -26,6 +26,8 @@ app.use((req, res, next) => {
   next();
 });
 
+app.get('/ping', (_req, res) => res.send('alive'));
+
 // ── Routes ────────────────────────────────────────────────────────────────────
 app.use('/api', usersRouter);
 app.use('/api', incidentsRouter);

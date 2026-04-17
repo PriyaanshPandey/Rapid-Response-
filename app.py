@@ -386,6 +386,11 @@ def upload_floorplan():
         return jsonify({'error': str(e), 'success': False}), 500
 
 
+@app.route('/ping', methods=['GET'])
+def ping():
+    return "alive"
+
+
 @app.route('/health', methods=['GET'])
 def health():
     return jsonify({
