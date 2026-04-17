@@ -3,7 +3,7 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/rapidresponse';
+const MONGO_URI = process.env.MONGO_URI || process.env.MONGO_URL || 'mongodb://localhost:27017/rapidresponse';
 
 async function connectDB() {
   const isLocal = MONGO_URI.includes('localhost') || MONGO_URI.includes('127.0.0.1');
