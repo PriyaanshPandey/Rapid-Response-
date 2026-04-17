@@ -342,44 +342,57 @@
     ::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
     ::-webkit-scrollbar-thumb:hover { background:#3a3a3a; }
     
-  /* Premium Boot Loader */
+  /* Ultra-Premium Cool Loader */
   #boot-loader {
-    position: fixed; inset: 0; background: #000; z-index: 10000;
+    position: fixed; inset: 0; background: radial-gradient(circle at center, #0a0a0a 0%, #000 100%); z-index: 10000;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    transition: opacity 1s, visibility 1s;
+    transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1), visibility 1.2s;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
   #boot-loader.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
   
-  .radar-container { position: relative; width: 200px; height: 200px; margin-bottom: 40px; }
-  .radar-ring {
-    position: absolute; inset: 0; border: 2px solid var(--info); border-radius: 50%;
-    opacity: 0; animation: radar-pulse 3s infinite;
-  }
-  .radar-ring:nth-child(2) { animation-delay: 1s; }
-  .radar-ring:nth-child(3) { animation-delay: 2s; }
+  .mvp-container { position: relative; text-align: center; }
   
-  @keyframes radar-pulse {
-    0% { transform: scale(0.5); opacity: 0.8; }
-    100% { transform: scale(1.5); opacity: 0; }
-  }
-  
-  .radar-scanner {
-    position: absolute; inset: 0; border-radius: 50%;
-    background: conic-gradient(from 0deg, rgba(56,189,248,0.4) 0%, transparent 60%);
-    animation: spin 2s linear infinite;
+  .mvp-logo {
+    font-size: 32px; font-weight: 900; color: #fff; letter-spacing: 0.3em;
+    text-transform: uppercase; margin-bottom: 20px;
+    background: linear-gradient(to right, #fff 20%, var(--info) 40%, var(--info) 60%, #fff 80%);
+    background-size: 200% auto;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    animation: shine 3s linear infinite;
+    filter: drop-shadow(0 0 15px rgba(56,189,248,0.3));
   }
   
-  .boot-branding {
-    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    display: flex; flex-direction: column; align-items: center; gap: 8px;
+  @keyframes shine { to { background-position: 200% center; } }
+  
+  .mvp-text {
+    font-size: 14px; font-weight: 600; color: var(--text-gray); letter-spacing: 0.1em;
+    margin-bottom: 30px; text-transform: uppercase;
   }
-  .boot-logo { font-size: 24px; font-weight: 900; color: #fff; letter-spacing: 0.2em; text-shadow: 0 0 15px var(--info); }
-  .boot-status-pill { padding: 4px 12px; background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.3); border-radius: 100px; font-size: 10px; font-weight: 800; color: var(--info); letter-spacing: 0.1em; text-transform: uppercase; }
+  
+  .cool-progress-track {
+    width: 240px; height: 4px; background: rgba(255,255,255,0.05);
+    border-radius: 100px; overflow: hidden; position: relative;
+    border: 1px solid rgba(255,255,255,0.02);
+  }
+  .cool-progress-fill {
+    position: absolute; inset: 0; width: 0%;
+    background: linear-gradient(90deg, transparent, var(--info), #fff, var(--info), transparent);
+    background-size: 200% 100%;
+    animation: progress-shimmer 2s linear infinite, fill-up 4s ease-out forwards;
+    box-shadow: 0 0 20px rgba(56,189,248,0.5);
+  }
+  
+  @keyframes fill-up { to { width: 100%; } }
+  
+  .floating-particles {
+    position: absolute; inset: 0; pointer-events: none;
+    background-image: radial-gradient(circle at center, rgba(56,189,248,0.1) 1px, transparent 1px);
+    background-size: 40px 40px; opacity: 0.3;
+  }
 
-  .boot-log { width: 300px; font-family: 'SF Mono', monospace; font-size: 11px; color: var(--text-muted); text-align: center; }
-  .boot-log-line { margin-bottom: 4px; animation: fade-in 0.3s; }
-  .boot-log-success { color: var(--success); }
-  .boot-log-warning { color: var(--warning); }
+  /* Existing utility for loader hidden state */
+  #boot-loader.hidden .cool-progress-fill { animation-play-state: paused; }
   
   @keyframes dash {
     to { stroke-dashoffset: -20; }
@@ -399,20 +412,18 @@
 </head>
 <body>
 
-<!-- ── BOOT LOADER ───────────────────────────────────────────── -->
+<!-- ── COOL MVP LOADER ───────────────────────────────────────── -->
 <div id="boot-loader">
-  <div class="radar-container">
-    <div class="radar-ring"></div>
-    <div class="radar-ring"></div>
-    <div class="radar-ring"></div>
-    <div class="radar-scanner"></div>
-    <div class="boot-branding">
-      <div class="boot-logo">SENTINEL</div>
-      <div class="boot-status-pill">System Boot</div>
+  <div class="floating-particles"></div>
+  <div class="mvp-container">
+    <div class="mvp-logo">SENTINEL</div>
+    <div class="mvp-text">Hang tight, waking up MVP...</div>
+    <div class="cool-progress-track">
+      <div class="cool-progress-fill"></div>
     </div>
   </div>
-  <div class="boot-log" id="boot-log">
-    <div class="boot-log-line">INITIALIZING SECURE LINK...</div>
+  <div class="boot-log" id="boot-log" style="margin-top: 24px; opacity: 0.5;">
+    <!-- Minimalist log purely for functional status -->
   </div>
 </div>
 
@@ -2339,52 +2350,60 @@ async function warmupBackends() {
     if (logEl.children.length > 5) logEl.removeChild(logEl.firstChild);
   };
 
+  const skipBtn = document.createElement('button');
+  skipBtn.textContent = 'Skip & Proceed →';
+  skipBtn.style.cssText = 'margin-top:20px; padding:8px 16px; background:transparent; border:1px solid var(--border); color:var(--text-muted); cursor:pointer; font-size:11px; border-radius:4px; transition:all 0.2s;';
+  skipBtn.onmouseover = () => { skipBtn.style.color = '#fff'; skipBtn.style.borderColor = '#fff'; };
+  skipBtn.onclick = () => { nodeReady = pythonReady = true; hideLoader(); };
+  document.getElementById('boot-loader').appendChild(skipBtn);
+
+  const hideLoader = () => {
+    addLog('SYSTEM LINK ESTABLISHED', 'success');
+    setTimeout(() => {
+      document.getElementById('boot-loader').classList.add('hidden');
+    }, 800);
+  };
+
   addLog('SIGNALING COMMAND CENTER...');
   
   let nodeReady = false;
   let pythonReady = false;
   let attempts = 0;
+  const maxAttempts = 3; // Ping up to 3 times, then proceed anyway
 
-  while (!nodeReady || !pythonReady) {
+  // Show the loader for at least 3 seconds for the premium feel
+  const minTimePromise = new Promise(r => setTimeout(r, 4000));
+
+  while (attempts < maxAttempts && (!nodeReady || !pythonReady)) {
     attempts++;
-    if (attempts > 60) { // 2 minutes timeout
-      addLog('BOOT ERROR: TIMEOUT', 'danger');
-      break;
-    }
-
-    const checks = [];
+    addLog(`WAKING UP CLOUD NODES (TRY ${attempts})...`);
     
-    if (!nodeReady) {
-      checks.push(
-        fetch(`${CONFIG.NODE_API}/ping`)
-          .then(r => r.text())
-          .then(t => { if(t === 'alive') { nodeReady = true; addLog('NODE BACKEND: ONLINE', 'success'); }})
-          .catch(() => {})
-      );
-    }
-    
-    if (!pythonReady) {
-      checks.push(
-        fetch(`${CONFIG.PYTHON_API}/ping`)
-          .then(r => r.text())
-          .then(t => { if(t === 'alive') { pythonReady = true; addLog('PYTHON BACKEND: ONLINE', 'success'); }})
-          .catch(() => {})
-      );
-    }
+    try {
+      if (!nodeReady) {
+        const res = await fetch(`${CONFIG.NODE_API}/ping`).catch(() => null);
+        if (res && res.ok) {
+           const t = await res.text();
+           if (t === 'alive') { nodeReady = true; addLog('NODE BACKEND: ONLINE', 'success'); }
+        }
+      }
+      if (!pythonReady) {
+        const res = await fetch(`${CONFIG.PYTHON_API}/ping`).catch(() => null);
+        if (res && res.ok) {
+           const t = await res.text();
+           if (t === 'alive') { pythonReady = true; addLog('PYTHON BACKEND: ONLINE', 'success'); }
+        }
+      }
+    } catch(e) {}
 
-    if (checks.length > 0) {
-      addLog(`WAKING UP CLOUD NODES (TRY ${attempts})...`);
-      await Promise.all(checks);
-    }
-
-    if (!nodeReady || !pythonReady) {
-      await new Promise(r => setTimeout(r, 2000));
-    }
+    if (nodeReady && pythonReady) break;
+    await new Promise(r => setTimeout(r, 1500));
   }
 
-  addLog('SYSTEM LINK ESTABLISHED', 'success');
-  await new Promise(r => setTimeout(r, 800));
-  document.getElementById('boot-loader').classList.add('hidden');
+  await minTimePromise;
+  if (!nodeReady || !pythonReady) {
+    addLog('PROCEEDING WITH PARTIAL LINK...', 'warning');
+  }
+  hideLoader();
 }
 
 (async function init() {
