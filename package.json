@@ -1,7 +1,7 @@
 {
-  "name": "sentinel-backend",
+  "name": "rapidresponse-backend",
   "version": "1.0.0",
-  "description": "SENTINEL — State & Messaging Backend",
+  "description": "RAPID RESPONSE — State & Messaging Backend",
   "main": "server.js",
   "engines": {
     "node": ">=18.0.0"

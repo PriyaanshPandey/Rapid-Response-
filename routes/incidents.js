@@ -46,7 +46,7 @@ router.post('/fire', async (req, res, next) => {
         });
       } catch (notifyErr) {
         // Per-user failure must not abort the whole request
-        console.error(`[SENTINEL] Notification failed for user ${user._id}:`, notifyErr.message);
+        console.error(`[RAPID RESPONSE] Notification failed for user ${user._id}:`, notifyErr.message);
       }
     });
 

@@ -412,18 +412,18 @@
 </head>
 <body>
 
-<!-- ── COOL MVP LOADER ───────────────────────────────────────── -->
+<!-- ── RAPID RESPONSE MISSION LOADER ───────────────────────── -->
 <div id="boot-loader">
   <div class="floating-particles"></div>
   <div class="mvp-container">
-    <div class="mvp-logo">SENTINEL</div>
-    <div class="mvp-text">Hang tight, waking up MVP...</div>
-    <div class="cool-progress-track">
+    <div class="mvp-logo" style="letter-spacing: 0.25em; font-size: 24px; font-weight: 800; color: #fff; text-shadow: 0 0 20px rgba(56,189,248,0.4);">RAPID RESPONSE</div>
+    <div class="mvp-text" id="mvp-status-text" style="font-family: 'SF Mono', monospace; font-size: 10px; color: var(--info); opacity: 0.8;">ESTABLISHING ENCRYPTED LINK...</div>
+    <div class="cool-progress-track" style="width: 280px; margin: 0 auto;">
       <div class="cool-progress-fill"></div>
     </div>
   </div>
-  <div class="boot-log" id="boot-log" style="margin-top: 24px; opacity: 0.5;">
-    <!-- Minimalist log purely for functional status -->
+  <div class="boot-log" id="boot-log" style="margin-top: 32px; opacity: 0.3; font-family: 'SF Mono', monospace; font-size: 8.5px; letter-spacing: 0.05em; text-transform: uppercase; max-width: 400px;">
+    <!-- Minimalist status log -->
   </div>
 </div>
 
@@ -1708,7 +1708,7 @@ async function logAction(msg) {
       renderLogs(logs);
       flashFooter();
     
-    } catch(e) { console.error('[SENTINEL]', e.message); }
+    } catch(e) { console.error('[RAPID RESPONSE]', e.message); }
   }
 function getFarthestNodeFromFire() {
   // Only these four nodes are allowed as meeting points
@@ -2345,9 +2345,18 @@ async function warmupBackends() {
   const addLog = (msg, type) => {
     const line = document.createElement('div');
     line.className = 'boot-log-line' + (type ? ' boot-log-' + type : '');
-    line.textContent = msg;
+    line.textContent = `> ${msg}`;
     logEl.appendChild(line);
     if (logEl.children.length > 5) logEl.removeChild(logEl.firstChild);
+    
+    // Update main status text with a more professional msg
+    const statusText = document.getElementById('mvp-status-text');
+    if (msg.includes('TRY')) {
+      const statuses = ['SYNCHRONIZING NODE NETWORK...', 'DECRYPTING SECURE LINK...', 'ESTABLISHING MISSION PROTOCOL...', 'VERIFYING SYSTEM INTEGRITY...'];
+      statusText.textContent = statuses[attempts % statuses.length];
+    } else {
+      statusText.textContent = msg;
+    }
   };
 
   const skipBtn = document.createElement('button');

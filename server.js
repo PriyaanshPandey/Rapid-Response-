@@ -37,7 +37,7 @@ app.get('/', (_req, res) => {
   res.send(`
     <html>
       <head>
-        <title>SENTINEL API</title>
+        <title>RAPID RESPONSE API</title>
         <style>
           body {
             font-family: Arial;
@@ -58,7 +58,7 @@ app.get('/', (_req, res) => {
         </style>
       </head>
       <body>
-        <h1>🚨 SENTINEL Backend</h1>
+        <h1>🚨 RAPID RESPONSE Backend</h1>
 
         <div class="box">
           <h3>Status: ✅ Running</h3>
@@ -90,7 +90,7 @@ app.use((_req, res) => {
 
 // ── Global Error Handler ──────────────────────────────────────────────────────
 app.use((err, _req, res, _next) => {
-  console.error('[SENTINEL ERROR]', err);
+  console.error('[RAPID RESPONSE ERROR]', err);
   const status = err.status || 500;
   res.status(status).json({ error: err.message || 'Internal server error' });
 });
