@@ -15,7 +15,7 @@ const PORT = process.env.PORT || 5000;
 app.use(express.json());
 
 // ── Database ──────────────────────────────────────────────────────────────────
-connectDB();
+// connectDB() is now called in the startServer() block below
 
 // Allow frontend to call the API
 app.use((req, res, next) => {
@@ -96,9 +96,19 @@ app.use((err, _req, res, _next) => {
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────────
-const port = process.env.PORT || PORT;
-app.listen(port, () => {
-  console.log(` Server running on port ${port}`);
-});
+const startServer = async () => {
+  try {
+    await connectDB();
+    const port = process.env.PORT || PORT;
+    app.listen(port, () => {
+      console.log(`[RAPID RESPONSE] Server running on port ${port}`);
+    });
+  } catch (err) {
+    console.error('[RAPID RESPONSE STARTUP ERROR]', err);
+    process.exit(1);
+  }
+};
+
+startServer();
 
 module.exports = app;
