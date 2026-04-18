@@ -23,6 +23,14 @@ const IncidentSchema = new Schema(
       enum: ['active', 'resolved'],
       default: 'active',
     },
+    simulationRunning: {
+      type: Boolean,
+      default: false,
+    },
+    meetingPoint: {
+      type: String,
+      default: null,
+    },
     createdAt: {
       type: Date,
       default: Date.now,

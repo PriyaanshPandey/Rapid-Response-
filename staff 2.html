@@ -3,117 +3,610 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script src="config.js"></script>
-  <title>Staff‑2 — RAPID RESPONSE Evacuation POV</title>
+  <title>Staff 2 — Evacuation Operations</title>
   <style>
     :root {
-      --danger: #ff4d4d; --success: #22c55e; --warning: #f59e0b; --info: #38bdf8;
-      --bg-primary: #0d0d0d; --bg-card: #161616; --border: #2a2a2a;
-      --text-white: #ffffff; --text-gray: #9ca3af; --text-muted: #6b7280;
-      --radius: 8px; --padding: 14px;
+      --danger:#ff4d4d;--success:#22c55e;--warning:#f59e0b;--info:#38bdf8;
+      --bg-primary:#0d0d0d;--bg-card:#161616;--border:#2a2a2a;
+      --text-white:#fff;--text-gray:#9ca3af;--text-muted:#6b7280;--radius:8px;--padding:14px;
     }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      background: var(--bg-primary); color: var(--text-white);
-      font-family: -apple-system, system-ui, sans-serif; overflow: hidden; height: 100vh;
-      display: flex; flex-direction: column;
-    }
-    header { background: var(--bg-card); border-bottom: 1px solid var(--border); padding: 10px 20px; display: flex; align-items: center; justify-content: space-between; }
-    .badge { padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 800; background: rgba(34,197,94,0.1); color: var(--success); border: 1px solid rgba(34,197,94,0.3); }
-    .main { flex: 1; display: flex; overflow: hidden; }
-    .map-area { width: 65%; position: relative; background: #000; border-right: 1px solid var(--border); }
-    .side-panel { flex: 1; padding: 15px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
-    .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 15px; }
-    .card-title { font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px; }
-    .progress-num { font-size: 36px; font-weight: 900; color: var(--success); }
-    .progress-track { height: 10px; background: var(--border); border-radius: 5px; overflow: hidden; margin: 10px 0; }
-    .progress-fill { height: 100%; background: var(--success); width: 0%; transition: width 1s ease; }
-    .btn-action { width: 100%; padding: 12px; border-radius: 6px; border: 1px solid var(--border); background: rgba(255,255,255,0.05); color: #fff; font-weight: 700; cursor: pointer; margin-bottom: 8px; transition: all 0.2s; }
-    .btn-action:hover { background: rgba(255,255,255,0.1); border-color: var(--success); }
-    .map-floor { width: 100%; height: 100%; object-fit: contain; opacity: 0.8; }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{background:var(--bg-primary);color:var(--text-white);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:14px;line-height:1.5;height:100vh;overflow:hidden;display:flex;flex-direction:column}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+    @keyframes pulse-scale{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.4);opacity:.8}}
+    @keyframes dot-pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.6);opacity:.7}}
+    @keyframes fade-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes slide-in-left{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @keyframes scanline       { from{transform:translateY(-100%)} to{transform:translateY(100%)} }
+    @keyframes dash-flow      { from{stroke-dashoffset:0} to{stroke-dashoffset:-8} }
+    @keyframes map-glow-green { 0%,100%{box-shadow:0 0 5px rgba(34,197,94,.2);border-color:var(--border)}50%{box-shadow:0 0 20px rgba(34,197,94,.5);border-color:rgba(34,197,94,.5)} }
+    @keyframes fire-breathe{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.8}50%{transform:translate(-50%,-50%) scale(1.15);opacity:1}}
+    @keyframes breathing{0%,100%{transform:scale(1)}50%{transform:scale(1.02)}}
+    @keyframes footer-flash-g{0%{background:rgba(34,197,94,.2)}100%{background:transparent}}
+    .blink-green{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--success);animation:blink 1.2s infinite;flex-shrink:0}
+    .card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:var(--padding)}
+    .card-title{font-size:13px;font-weight:700;color:var(--text-white);letter-spacing:.04em;text-transform:uppercase;margin-bottom:12px}
+    .badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+    .badge-danger{background:rgba(255,77,77,.15);color:var(--danger)}
+    .badge-success{background:rgba(34,197,94,.15);color:var(--success)}
+    .badge-info{background:rgba(56,189,248,.15);color:var(--info)}
+    .badge-idle{background:rgba(156,163,175,.15);color:var(--text-gray)}
+    .badge-live{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:4px;font-size:11px;font-weight:700;background:rgba(34,197,94,.12);color:var(--success);border:1px solid rgba(34,197,94,.3);animation:breathing 2s infinite}
+    header{width:100%;background:var(--bg-card);border-bottom:1px solid rgba(34,197,94,.3);padding:10px 24px;display:flex;align-items:center;gap:16px;flex-shrink:0;box-shadow:0 0 20px rgba(34,197,94,.1)}
+    .brand-title{font-size:17px;font-weight:800;color:var(--text-white);letter-spacing:-.01em}
+    .brand-sub{font-size:10px;color:var(--success);font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+    .role-badge{padding:4px 12px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.4);border-radius:6px;font-size:11px;font-weight:800;color:var(--success);letter-spacing:.08em;text-transform:uppercase}
+    .header-stats{display:flex;gap:20px;margin-left:auto}
+    .stat-card{display:flex;flex-direction:column;min-width:80px}
+    .stat-label{font-size:10px;font-weight:700;color:var(--text-muted);letter-spacing:.05em}
+    .stat-value{font-size:15px;font-weight:800;color:var(--text-white);white-space:nowrap}
+    .stat-card.success .stat-value{color:var(--success)}
+    .back-btn{padding:7px 14px;background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--text-gray);border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;text-decoration:none;letter-spacing:.05em;text-transform:uppercase;transition:all .2s}
+    .back-btn:hover{background:rgba(34,197,94,.1);border-color:var(--success);color:#fff}
+    .main-content{flex:1;display:flex;gap:12px;padding:12px;overflow:hidden;min-height:0}
+    .col-left{width:25%;flex-shrink:0;display:flex;flex-direction:column;gap:12px;overflow-y:auto}
+    .col-center{flex:1;min-width:0;display:flex;flex-direction:column}
+    .col-right{width:25%;flex-shrink:0;display:flex;flex-direction:column;gap:12px;overflow-y:auto}
+    .guest-list{list-style:none;padding-right:4px;max-height:310px;overflow-y:auto;scroll-behavior:smooth}
+    .guest-row{display:flex;align-items:center;gap:10px;padding:11px 13px;margin-bottom:7px;background:linear-gradient(135deg,rgba(10,30,10,.8),rgba(5,15,5,.95));border:1px solid rgba(34,197,94,.15);border-radius:8px;animation:slide-in-left .4s ease forwards;position:relative}
+    .guest-row::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--success);opacity:.8;border-radius:3px 0 0 3px;box-shadow:0 0 8px var(--success)}
+    .guest-info{flex:1;min-width:0}
+    .guest-name{font-size:13px;color:var(--text-white);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .guest-room{font-size:10px;font-weight:800;color:var(--success);text-transform:uppercase;letter-spacing:.05em}
+    .assembly-count{font-size:38px;font-weight:900;color:var(--success);line-height:1;margin-bottom:10px;letter-spacing:-2px}
+    .progress-track{height:8px;background:var(--border);border-radius:4px;margin-bottom:6px;overflow:hidden}
+    .progress-fill{height:100%;background:var(--success);border-radius:4px;transition:width .6s ease}
+    .progress-meta{display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted)}
+    .map-card{flex:1;display:flex;flex-direction:column;position:relative;animation:map-glow-green 4s infinite}
+    .map-wrapper{position:relative;flex:1;min-height:0;background:#111;border-radius:6px;overflow:hidden;border:1px solid var(--border)}
+    .map-wrapper img { width:100%; height:100%; object-fit:fill; display:block; border-radius:6px; background:#000; }
+    .map-wrapper::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(to bottom,transparent 0,transparent 4px,rgba(255,255,255,.03) 5px);pointer-events:none;z-index:5}
+    .map-wrapper::after{content:'';position:absolute;top:0;left:0;width:100%;height:30%;background:linear-gradient(to bottom,transparent,rgba(34,197,94,.05),transparent);animation:scanline 5s linear infinite;pointer-events:none;z-index:6}
+    .map-live-indicator{position:absolute;top:10px;left:10px;display:flex;align-items:center;gap:6px;color:var(--success);font-size:11px;font-weight:700;background:rgba(0,0,0,.6);padding:4px 8px;border-radius:4px;border:1px solid rgba(34,197,94,.3);z-index:20}
+    .map-dot{position:absolute;z-index:15;transform:translate(-50%,-50%);cursor:pointer}
+    .map-dot-inner{width:12px;height:12px;border-radius:50%;animation:dot-pulse 1.5s ease-in-out infinite}
+    .map-dot-label{position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-size:10px;font-weight:700;white-space:nowrap;background:rgba(0,0,0,0.85);color:#fff;padding:2px 6px;border-radius:4px;pointer-events:none;opacity:0.9;border:1px solid rgba(255,255,255,0.1);box-shadow:0 2px 4px rgba(0,0,0,0.3);z-index:20}
+    .dot-safe .map-dot-inner{background:var(--success);box-shadow:0 0 8px var(--success)}
+    .dot-moving .map-dot-inner{background:var(--info);box-shadow:0 0 8px var(--info)}
+    .dot-idle .map-dot-inner{background:var(--text-muted);box-shadow:none;animation:none}
+    .dot-staff .map-dot-inner{width:18px;height:18px;background:transparent;border:3px solid #22c55e;box-shadow:0 0 12px #22c55e;animation:none}
+    .dot-target {z-index:30 !important;}
+    .dot-target .map-dot-inner {outline: 4px solid #fff; outline-offset: 4px; animation: target-pulse-green 1s infinite alternate !important;}
+    @keyframes target-pulse-green { from { outline-color: rgba(255,255,255,0.8); outline-offset: 2px; } to { outline-color: var(--success); outline-offset: 8px; } }
+    .hud-card {background:linear-gradient(135deg, rgba(34,197,94,0.15), rgba(0,0,0,0.4)); border:1px solid var(--success); border-radius:12px; padding:16px; margin-bottom:12px; animation: breathing 3s infinite;}
+    .hud-title {font-size:11px; font-weight:800; color:var(--success); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:8px; display:flex; align-items:center; gap:6px;}
+    .hud-body {display:flex; flex-direction:column; gap:4px;}
+    .hud-guest {font-size:18px; font-weight:900; color:#fff;}
+    .hud-meta {font-size:12px; color:var(--text-gray); display:flex; justify-content:space-between;}
+    .hud-dist {color:var(--warning); font-weight:800;}
+    .fire-zone{position:absolute;border-radius:50%;pointer-events:none;z-index:12;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(255,77,77,.55) 0%,rgba(245,158,11,.3) 50%,transparent 75%);animation:fire-breathe 1.5s ease-in-out infinite}
+    .card-header-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+    .card-header-row .card-title{margin-bottom:0}
+    .alert-list{display:flex;flex-direction:column;gap:7px;max-height:310px;overflow-y:auto;padding-right:4px;scroll-behavior:smooth}
+    .alert-list::-webkit-scrollbar{width:4px}
+    .alert-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:4px}
+    .alert-row{display:flex;flex-direction:column;gap:4px;padding:9px 11px;background:rgba(20,20,20,.8);border:1px solid rgba(255,255,255,.05);border-radius:7px;animation:fade-in .3s ease-out;position:relative;overflow:hidden}
+    .alert-row::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
+    .alert-row.al-danger::before{background:var(--danger)}
+    .alert-row.al-warning::before{background:var(--warning)}
+    .alert-row.al-success::before{background:var(--success)}
+    .alert-row.al-info::before{background:var(--info)}
+    .alert-head{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,.05);padding-bottom:4px}
+    .alert-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;display:inline-flex;align-items:center;gap:4px}
+    .alert-row.al-danger .alert-label{color:#fca5a5}
+    .alert-row.al-warning .alert-label{color:#fcd34d}
+    .alert-row.al-success .alert-label{color:#86efac}
+    .alert-row.al-info .alert-label{color:#7dd3fc}
+    .alert-txt{font-size:12px;color:var(--text-white);line-height:1.5;overflow-wrap:break-word;word-wrap:break-word;}
+    .alert-time-stamp{font-size:10px;color:rgba(255,255,255,.4);font-family:monospace}
+    .staff-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);animation:fade-in .3s ease-out}
+    #staff-list{max-height:310px;overflow-y:auto;padding-right:4px;scroll-behavior:smooth}
+    .staff-row:last-child{border-bottom:none}
+    .avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0}
+    .avatar-green{background:rgba(34,197,94,.2);color:var(--success);border:2px solid rgba(34,197,94,.5);box-shadow:0 0 10px rgba(34,197,94,.2)}
+    .avatar-blue{background:rgba(56,189,248,.2);color:var(--info);border:1px solid rgba(56,189,248,.35)}
+    .avatar-amber{background:rgba(245,158,11,.2);color:var(--warning);border:1px solid rgba(245,158,11,.35)}
+    .staff-info{flex:1;min-width:0}
+    .staff-name{font-size:13px;font-weight:700;color:var(--text-white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .staff-task{font-size:11px;color:var(--text-muted);line-height:1.4}
+    .gps-dot{display:inline-block;width:6px;height:6px;background:var(--success);border-radius:50%;margin-right:4px;animation:blink 1.5s infinite;box-shadow:0 0 4px var(--success)}
+    .priority-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);animation:fade-in .3s ease-out}
+    .priority-row:last-child{border-bottom:none}
+    .priority-info{flex:1;min-width:0}
+    .priority-name{font-size:13px;font-weight:700;color:var(--text-white)}
+    .priority-meta{font-size:11px;color:var(--text-muted)}
+    footer{width:100%;background:var(--bg-card);border-top:1px solid rgba(34,197,94,.2);padding:8px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+    .footer-left,.footer-right{font-size:12px;color:var(--text-muted)}
+    .footer-right span{color:var(--success);font-weight:700}
+    .footer-left{padding:2px 8px;border-radius:4px;margin-left:-8px}
+    .footer-left.flash{animation:footer-flash-g .3s ease-out}
+    .spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--success);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
+    .empty-state{font-size:12px;color:var(--text-muted);text-align:center;padding:12px 0;font-style:italic}
+    #guest-full-list{max-height:310px;overflow-y:auto;padding-right:4px;scroll-behavior:smooth}
+    ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg-primary)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+    .mission-banner{background:linear-gradient(135deg,rgba(34,197,94,.08),rgba(16,185,129,.15));border:1px solid rgba(34,197,94,.3);border-radius:8px;padding:12px 16px;display:flex;align-items:center;gap:12px}
+    .mission-title{font-size:13px;font-weight:800;color:var(--success);text-transform:uppercase;letter-spacing:.06em}
+    .mission-desc{font-size:11px;color:var(--text-muted);margin-top:2px}
   </style>
+  <script src="config.js"></script>
 </head>
 <body>
-  <header>
-    <div style="display:flex; align-items:center; gap:12px">
-      <div class="badge">EVACUATION ACTIVE</div>
-      <div>
-        <div style="font-weight:800; font-size:16px;">RAPID RESPONSE</div>
-        <div style="font-size:11px; color:var(--text-muted)">Staff‑2 (Evacuation POV)</div>
-      </div>
+<header>
+  <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+    <span class="blink-green"></span>
+    <div>
+      <div class="brand-title">🚶 Evacuation Operations</div>
+      <div class="brand-sub">Staff 2 — Green Team POV</div>
     </div>
-    <a href="dashboard.html" style="color:var(--text-gray); text-decoration:none; font-size:12px; font-weight:600">← Exit POV</a>
-  </header>
-
-  <div class="main">
-    <div class="map-area" id="map-container">
-      <img src="floor-map.png" class="map-floor" />
-      <div id="dots-layer" style="position:absolute; inset:0"></div>
-    </div>
-    <div class="side-panel">
-      <div class="card" style="border-left: 4px solid var(--success)">
-        <div class="card-title">Evacuation Status</div>
-        <div class="progress-num" id="evac-pct">0%</div>
-        <div class="progress-track"><div class="progress-fill" id="evac-bar"></div></div>
-        <div style="font-size:12px; color:var(--text-muted)" id="evac-count">0 of 0 Guests Gathered</div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">Guidance</div>
-        <div style="font-size:14px; font-weight:600; line-height:1.4">Clear Zone A and direct guests toward West Exit.</div>
-        <div style="font-size:12px; color:var(--text-muted); margin-top:8px">Ensure stairwells are clear of debris.</div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">Field Actions</div>
-        <button class="btn-action" onclick="updateLocation()">📍 Log My Current Node</button>
-        <button class="btn-action" style="color:var(--info); border-color:var(--info)" onclick="alert('Crowd status updated.')">🚶 Notify: Guests Moving</button>
-        <button class="btn-action" style="color:var(--danger); border-color:var(--danger)" onclick="alert('Support requested.')">🚨 Request Support</button>
-      </div>
-    </div>
+    <span class="role-badge">EVACUATION</span>
   </div>
+  <div class="header-stats">
+    <div class="stat-card success"><div class="stat-label">Safe Guests</div><div class="stat-value" id="stat-safe-count">—</div></div>
+    <div class="stat-card"><div class="stat-label">In Transit</div><div class="stat-value" id="stat-moving-count" style="color:var(--info)">—</div></div>
+    <div class="stat-card"><div class="stat-label">At Meeting Pt</div><div class="stat-value" id="stat-arrived-count" style="color:var(--warning)">—</div></div>
+    <div class="stat-card"><div class="stat-label">Meeting Pt</div><div class="stat-value" id="stat-meeting-node" style="color:var(--warning)">—</div></div>
+  </div>
+  <a href="dashboard.html" class="back-btn" style="margin-left:16px">← Command</a>
+</header>
 
-  <script>
-    const CONFIG = window.CONFIG || { NODE_API: 'http://localhost:5000' };
-    const API_BASE = CONFIG.NODE_API;
-    const MY_NAME = "Staff-2";
+<div class="main-content">
+  <aside class="col-left">
+    <div id="hud-area"></div>
+    <div class="mission-banner">
+      <div style="font-size:24px">🟢</div>
+      <div><div class="mission-title">Evacuation Mission</div><div class="mission-desc">Escort all SAFE guests to the meeting point</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🟢 Guests to Evacuate</div>
+      <ul class="guest-list" id="safe-guests-list"><li class="empty-state"><span class="spinner"></span>Loading…</li></ul>
+    </div>
+    <div class="card">
+      <div class="card-title">Evacuation Progress</div>
+      <div class="assembly-count" id="evac-count">—</div>
+      <div class="progress-track"><div class="progress-fill" id="evac-progress" style="width:0%"></div></div>
+      <div class="progress-meta"><span id="evac-pct">0%</span><span id="evac-frac">0 of 0</span></div>
+    </div>
+  </aside>
 
-    let allUsers = [];
-    let myUser = null;
+  <main class="col-center">
+    <div class="card map-card">
+      <div class="card-title">🗺 Live Evacuation Map — Green Team Paths</div>
+      <div class="map-wrapper" id="map-wrapper">
+        <svg id="path-layer" viewBox="0 0 100 100" preserveAspectRatio="none"
+          style="position:absolute;inset:0;width:100%;height:100%;z-index:14;pointer-events:none">
+          <defs>
+            <filter id="glow-green" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="0.3" result="blur"/>
+              <feFlood flood-color="#22c55e" flood-opacity="0.4" result="color"/>
+              <feComposite in="color" in2="blur" operator="in" result="shadow"/>
+              <feMerge><feMergeNode in="shadow"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+        </svg>
+        <img src="floor-map.png" alt="Floor Map" id="map-img"/>
+        <div id="map-dots-layer" style="position:absolute;inset:0;z-index:15;pointer-events:none"></div>
+        <div id="map-fire-layer" style="position:absolute;inset:0;z-index:10;pointer-events:none"></div>
+        <div style="position:absolute;bottom:10px;right:10px;background:rgba(0,0,0,.8);border:1px solid var(--border);border-radius:6px;padding:8px 10px;z-index:20;font-size:11px;display:flex;flex-direction:column;gap:5px">
+          <div style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:var(--success);display:inline-block;box-shadow:0 0 6px var(--success)"></span> Safe</div>
+          <div style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:var(--info);display:inline-block"></span> Moving</div>
+          <div style="display:flex;align-items:center;gap:6px"><span style="width:18px;height:18px;border-radius:50%;border:3px solid #22c55e;display:inline-block;box-shadow:0 0 8px #22c55e"></span> 🚶 Evac Staff</div>
+          <div style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:rgba(255,100,0,.7);display:inline-block"></span> 🔥 Fire</div>
+        </div>
+        <div class="map-live-indicator"><span class="blink-green"></span>EVAC LIVE</div>
+      </div>
+    </div>
+  </main>
 
-    async function fetchData() {
-      try {
-        const res = await fetch(`${API_BASE}/api/users`);
-        allUsers = await res.json();
-        myUser = allUsers.find(u => u.name === MY_NAME);
-        render();
-      } catch (e) { console.error(e); }
+  <aside class="col-right">
+    <div class="card">
+      <div class="card-header-row">
+        <div class="card-title">Mission Logs</div>
+        <span class="badge-live"><span class="blink-green"></span>LIVE</span>
+      </div>
+      <div class="alert-list" id="alert-list"><div class="empty-state"><span class="spinner"></span>Loading…</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🚶 Evac Staff</div>
+      <div id="staff-list"><div class="empty-state"><span class="spinner"></span>Loading…</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Assigned Guests</div>
+      <div id="guest-full-list"><div class="empty-state"><span class="spinner"></span>Loading…</div></div>
+    </div>
+  </aside>
+</div>
+
+<footer>
+  <div class="footer-left" id="footer-timestamp">Last Update: <span id="footer-time">--:--:--</span></div>
+  <div class="footer-right">Role: <span>EVAC STAFF · Staff 2</span></div>
+</footer>
+
+<script>
+const STAFF_ROLE = 'evac';
+const CONFIG = window.CONFIG_OVERRIDE || { NODE_API: window.location.hostname==='localhost'?'http://localhost:5000':window.location.origin.replace(':3000',':5000') };
+const API_BASE = CONFIG.NODE_API;
+
+let NODE_POSITIONS = {
+  "CJ_TL":{x:10,y:28},"CJ_TM":{x:50,y:25},"CJ_TR":{x:88,y:27},
+  "CJ_ML":{x:10,y:42},"CJ_MC":{x:47,y:42},"CJ_MR":{x:88,y:43},
+  "CJ_LL":{x:10,y:60},"CJ_LC":{x:47,y:60},"CJ_LR":{x:87,y:58},
+  "CJ_BL":{x:10,y:74},"CJ_BC":{x:47,y:74},"CJ_BR":{x:88,y:74},
+  "P_T1":{x:25,y:26},"P_T2":{x:40,y:27},"P_T3":{x:60,y:25},"P_T4":{x:75,y:26},
+  "P_M1":{x:25,y:42},"P_M2":{x:35,y:42},"P_M3":{x:60,y:42},"P_M4":{x:75,y:44},
+  "P_L1":{x:25,y:57},"P_L2":{x:35,y:58},"P_L3":{x:56,y:59},"P_L4":{x:75,y:58},
+  "P_B1":{x:23,y:73},"P_B2":{x:35,y:74},"P_B3":{x:60,y:74},"P_B4":{x:75,y:74},
+  "P_VL1":{x:9,y:34},"P_VL2":{x:10,y:50},"P_VL3":{x:10,y:68},
+  "P_VC1":{x:47,y:34},"P_VC2":{x:47,y:50},"P_VC3":{x:47,y:68},
+  "P_VR1":{x:88,y:34},"P_VR2":{x:88,y:50},"P_VR3":{x:88,y:68},
+  "CJ_TM_MID":{x:50,y:33},"CJ_MC_MID":{x:47,y:51},"CJ_LC_MID":{x:47,y:69},
+  "CJ_TL_MID":{x:18,y:35},"CJ_TR_MID":{x:83,y:35},"CJ_BL_MID":{x:18,y:68},"CJ_BR_MID":{x:83,y:68},
+  "CH_TL_MID":{x:18,y:28},"CH_TM_MID":{x:50,y:28},"CH_TR_MID":{x:83,y:27},
+  "CH_ML_MID":{x:18,y:42},"CH_MM_MID":{x:47,y:42},"CH_MR_MID":{x:83,y:43},
+  "CH_LL_MID":{x:18,y:60},"CH_LM_MID":{x:47,y:60},"CH_LR_MID":{x:83,y:58},
+  "CH_BL_MID":{x:18,y:74},"CH_BM_MID":{x:47,y:74},"CH_BR_MID":{x:83,y:74},
+  "CV_L1_MID":{x:10,y:42},"CV_L2_MID":{x:10,y:60},"CV_R1_MID":{x:88,y:42},"CV_R2_MID":{x:88,y:60},
+  "CV_C1_MID":{x:47,y:42},"CV_C2_MID":{x:47,y:60},
+  "1":{x:17,y:17},"2":{x:25,y:18},"3":{x:32,y:18},"4":{x:38,y:18},
+  "5":{x:74,y:17},"6":{x:78,y:17},"7":{x:84,y:17},"8":{x:90,y:17},"9":{x:96,y:17},
+  "10":{x:16,y:34},"11":{x:22,y:34},"12":{x:28,y:34},"13":{x:34,y:34},"14":{x:40,y:34},
+  "15":{x:56,y:34},"16":{x:66,y:34},
+  "17":{x:96,y:34},"18":{x:96,y:42},"19":{x:96,y:50},
+  "20":{x:35,y:50},"21":{x:40,y:50},
+  "22":{x:34,y:82},"23":{x:40,y:82},
+  "24":{x:53,y:82},"25":{x:59,y:82},"26":{x:64,y:82},
+  "27":{x:70,y:82},"28":{x:76,y:82},"29":{x:81,y:82},
+  "m3":{x:22,y:50},"m1":{x:74,y:34},"m2":{x:74,y:66},"m4":{x:22,y:84},
+  "medkit":{x:88,y:16},"fireextinguisher":{x:8,y:88}
+};
+
+(function(){
+  const img=localStorage.getItem('floorPlanImage');
+  const gr=localStorage.getItem('floorPlanGraph');
+  if(img)document.getElementById('map-img').src=img;
+  if(gr){try{const g=JSON.parse(gr);Object.keys(NODE_POSITIONS).forEach(k=>delete NODE_POSITIONS[k]);Object.assign(NODE_POSITIONS,g.NODE_POSITIONS);}catch(e){}}
+})();
+
+let allUsers=[], activeFireNodes=[], currentMeetingPoint=null;
+
+async function apiFetch(path){
+  const r=await fetch(API_BASE+path);if(!r.ok)throw new Error(path+' → '+r.status);return r.json();
+}
+
+function buildPathData(points) {
+  if (points.length < 1) return '';
+  if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
+  if (points.length === 2) return `M ${points[0].x} ${points[0].y} L ${points[1].x} ${points[1].y}`;
+
+  let d = `M ${points[0].x} ${points[0].y}`;
+
+  for (let i = 0; i < points.length - 1; i++) {
+    const curr = points[i];
+    const next = points[i + 1];
+
+    if (i === points.length - 2) {
+      d += ` L ${next.x} ${next.y}`;
+    } else {
+      const after = points[i + 2];
+      const mx1 = (curr.x + next.x) / 2;
+      const my1 = (curr.y + next.y) / 2;
+      const mx2 = (next.x + after.x) / 2;
+      const my2 = (next.y + after.y) / 2;
+      d += ` L ${mx1} ${my1} Q ${next.x} ${next.y} ${mx2} ${my2}`;
     }
+  }
+  return d;
+}
 
-    function render() {
-      const guests = allUsers.filter(u => u.type === 'guest');
-      const safe = guests.filter(u => u.status === 'safe').length;
-      const total = guests.length;
-      const pct = total > 0 ? Math.round((safe / total) * 100) : 0;
+function drawSharedPath(pathId, points, color, snap = false){
+  const svg = document.getElementById('path-layer');
+  const pathData = buildPathData(points);
 
-      document.getElementById('evac-pct').innerText = `${pct}%`;
-      document.getElementById('evac-bar').style.width = `${pct}%`;
-      document.getElementById('evac-count').innerText = `${safe} of ${total} Guests Gathered`;
-    }
+  [`path-shadow-${pathId}`, `path-main-${pathId}`, `path-dash-${pathId}`,
+   `path-glow-${pathId}`, `path-${pathId}`].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+  });
 
-    async function updateLocation() {
-      const node = prompt("Enter current Node ID:", myUser ? myUser.node : "");
-      if (!node || !myUser) return;
-      await fetch(`${API_BASE}/api/users/${myUser._id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ node, status: 'moving' })
+  const shadowEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  shadowEl.setAttribute('d', pathData);
+  shadowEl.setAttribute('stroke', 'rgba(0,0,0,0.6)');
+  shadowEl.setAttribute('stroke-width', '2.2');
+  shadowEl.setAttribute('fill', 'none');
+  shadowEl.setAttribute('stroke-linecap', 'round');
+  shadowEl.setAttribute('stroke-linejoin', 'round');
+  shadowEl.id = `path-shadow-${pathId}`;
+  svg.appendChild(shadowEl);
+
+  const mainEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  mainEl.setAttribute('d', pathData);
+  mainEl.setAttribute('stroke', color);
+  mainEl.setAttribute('stroke-width', '1.4');
+  mainEl.setAttribute('fill', 'none');
+  mainEl.setAttribute('opacity', '0.92');
+  mainEl.setAttribute('stroke-linecap', 'round');
+  mainEl.setAttribute('stroke-linejoin', 'round');
+  mainEl.id = `path-main-${pathId}`;
+  svg.appendChild(mainEl);
+
+  const dashEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  dashEl.setAttribute('d', pathData);
+  dashEl.setAttribute('stroke', 'rgba(255,255,255,0.7)');
+  dashEl.setAttribute('stroke-width', '0.7');
+  dashEl.setAttribute('fill', 'none');
+  dashEl.setAttribute('stroke-linecap', 'round');
+  dashEl.setAttribute('stroke-dasharray', '2.7');
+  dashEl.setAttribute('stroke-linejoin', 'round');
+  dashEl.id = `path-dash-${pathId}`;
+  dashEl.style.animation = 'dash-flow 0.8s linear infinite';
+  svg.appendChild(dashEl);
+
+  if (!snap) {
+    try {
+      const len = mainEl.getTotalLength();
+      const dur = Math.min(points.length * 0.18, 1.0);
+      [mainEl, shadowEl].forEach(el => {
+        el.setAttribute('stroke-dasharray', len);
+        el.setAttribute('stroke-dashoffset', len);
+        el.style.transition = `stroke-dashoffset ${dur}s cubic-bezier(0.4, 0, 0.2, 1)`;
+        void el.getBoundingClientRect();
+        el.setAttribute('stroke-dashoffset', '0');
       });
-      fetchData();
-    }
+    } catch(e) {}
+  }
+}
 
-    setInterval(fetchData, 4000);
-    fetchData();
-  </script>
+function renderActivePaths(){
+  const svg=document.getElementById('path-layer');
+  try{
+    const cache=JSON.parse(localStorage.getItem('rr_activePaths')||'{}');
+    const now=Date.now();
+    const activeIds=new Set();
+
+    Object.entries(cache).forEach(([id, data])=>{
+      if(data.role!==STAFF_ROLE) return;
+      if(now - data.ts > 60000) return; // Allow up to 60s for long walks
+      activeIds.add(id);
+
+      if(!document.getElementById(`path-${id}`)){
+        drawSharedPath(id, data.points, data.color||'#22c55e', true);
+      }
+    });
+
+    svg.querySelectorAll('path').forEach(p=>{
+      if(p.id && p.id.startsWith('path-')){
+        const baseId = p.id.replace('path-shadow-','').replace('path-main-','').replace('path-dash-','').replace('path-glow-','').replace('path-','');
+        if(!activeIds.has(baseId)) p.remove();
+      }
+    });
+  }catch(e){}
+}
+
+function renderStats(users){
+  const mp = (currentMeetingPoint || '').toLowerCase();
+  
+  // Total guests that are NOT red (Help)
+  const allGreenGuests = users.filter(u => u.type === 'guest' && u.status !== 'help');
+  const totalEvac = allGreenGuests.length || 1;
+  
+  // Guests that are at the meeting point (case-insensitive)
+  const atMeet = allGreenGuests.filter(u => (u.node || '').toLowerCase() === mp);
+  
+  const safeCount = users.filter(u => u.type === 'guest' && u.status === 'safe').length;
+  const movingCount = users.filter(u => u.type === 'guest' && u.status === 'moving').length;
+
+  document.getElementById('stat-safe-count').textContent   = safeCount;
+  document.getElementById('stat-moving-count').textContent = movingCount;
+  document.getElementById('stat-arrived-count').textContent = atMeet.length;
+  document.getElementById('stat-meeting-node').textContent  = mp.toUpperCase() || '—';
+
+  const pct = Math.min(100, Math.round((atMeet.length / totalEvac) * 100));
+  
+  const evacCountEl = document.getElementById('evac-count');
+  evacCountEl.textContent = pct === 100 ? '✅ ALL CLEAR' : `${atMeet.length} SAFE`;
+  evacCountEl.style.color = pct === 100 ? 'var(--success)' : '';
+
+  document.getElementById('evac-progress').style.width = pct + '%';
+  document.getElementById('evac-pct').textContent = pct + '%';
+  document.getElementById('evac-frac').textContent = `${atMeet.length} of ${totalEvac}`;
+}
+
+function renderSafeGuests(users){
+  const list = users.filter(u => u.type === 'guest' && u.status !== 'help');
+  const el = document.getElementById('safe-guests-list');
+  const mp = (currentMeetingPoint || '').toLowerCase();
+
+  if (!list.length) {
+    el.innerHTML = '<li class="empty-state">✓ All clear!</li>';
+    return;
+  }
+
+  const allAtMp = list.every(u => (u.node || '').toLowerCase() === mp);
+  if (allAtMp && list.length > 0) {
+    el.innerHTML = '<li class="empty-state" style="color:var(--success); font-weight:700">✅ All evacuated guests at Meeting Point!</li>';
+    return;
+  }
+
+  el.innerHTML = list.map((u, i) => {
+    const atMp = (u.node || '').toLowerCase() === mp;
+    const lbl = atMp ? 'AT MEETING PT' : u.status.toUpperCase();
+    return `<li class="guest-row" style="animation-delay:${i * .07}s">
+      <div class="guest-info">
+        <div class="guest-name">${u.name}</div>
+        <div class="guest-room" style="${atMp ? 'color:#22c55e' : ''}">📍 ${u.node || '?'} | ${lbl}</div>
+      </div>
+      <span class="badge badge-${atMp ? 'success' : (u.status === 'moving' ? 'info' : 'idle')}">${atMp ? 'SAFE' : u.status.toUpperCase()}</span>
+    </li>`;
+  }).join('');
+}
+
+function renderStaff(users){
+  const staff=users.filter(u=>u.type==='staff'&&u.role==='evac');
+  const el=document.getElementById('staff-list');
+  if(!staff.length){el.innerHTML='<div class="empty-state">No evac staff assigned</div>';return;}
+  const ac=s=>s==='moving'?'avatar-blue':s==='safe'?'avatar-green':'avatar-amber';
+  const sb=s=>{const m={safe:'badge-success',moving:'badge-info',help:'badge-danger',idle:'badge-idle'};return`<span class="badge ${m[s]||'badge-idle'}">${s.toUpperCase()}</span>`;};
+  el.innerHTML=staff.map(u=>`
+    <div class="staff-row">
+      <div class="avatar ${ac(u.status)}">${u.name.slice(0,2).toUpperCase()}</div>
+      <div class="staff-info">
+        <div class="staff-name">🚶 ${u.name}</div>
+        <div class="staff-task"><span class="gps-dot"></span>Node <strong style="color:var(--success)">${u.node||'?'}</strong></div>
+      </div>
+      ${sb(u.status)}
+    </div>`).join('');
+}
+
+function renderGuestList(users){
+  const guests=users.filter(u=>u.type==='guest'&&u.status!=='help');
+  const el=document.getElementById('guest-full-list');
+  if(!guests.length){el.innerHTML='<div class="empty-state">No active evac targets</div>';return;}
+  const bm={safe:'badge-success',help:'badge-danger',moving:'badge-info',idle:'badge-idle'};
+  el.innerHTML=guests.map(u=>`
+    <div class="priority-row">
+      <div class="priority-info">
+        <div class="priority-name">${u.name}</div>
+        <div class="priority-meta">📍 Node ${u.node||'?'} · ${u.phone||''}</div>
+      </div>
+      <span class="badge ${bm[u.status]||'badge-idle'}">${u.status.toUpperCase()}</span>
+    </div>`).join('');
+}
+
+function renderMapDots(users){
+  const layer=document.getElementById('map-dots-layer');layer.innerHTML='';
+  
+  // Identify the CURRENT staff member for this dashboard
+  const currentStaff = users.find(u => u.type === 'staff' && u.role === 'evac');
+
+  const relevant=users.filter(u=>
+    (u.type==='staff'&&u.role==='evac')||
+    (u.type==='guest'&&u.status!=='help')
+  );
+  const byNode={};
+  relevant.forEach(u=>{if(u.node)(byNode[u.node]=byNode[u.node]||[]).push(u);});
+  Object.entries(byNode).forEach(([node,list])=>{
+    const pos=NODE_POSITIONS[node];if(!pos)return;
+    list.forEach((u,idx)=>{
+      const isStaff=u.type==='staff';
+      const isTarget = currentStaff && u.assignedTo === currentStaff._id;
+      
+      const sc=isStaff?'dot-staff':(u.status==='moving'?'dot-moving':u.status==='idle'?'dot-idle':'dot-safe');
+      const angle=(idx/list.length)*2*Math.PI;
+      const ox=Math.cos(angle)*14,oy=Math.sin(angle)*14;
+      const dot=document.createElement('div');
+      dot.className=`map-dot ${sc} ${isTarget?'dot-target':''}`;
+      dot.style.left=`calc(${pos.x}% + ${ox}px)`;
+      dot.style.top=`calc(${pos.y}% + ${oy}px)`;
+      dot.innerHTML=`<div class="map-dot-inner"${isStaff?' style="width:18px;height:18px;background:transparent;border:3px solid #22c55e;box-shadow:0 0 10px #22c55e"':''}></div>
+                     <div class="map-dot-label">${isStaff?'🚶':(u.node===currentMeetingPoint?'✅':'🛡️')} ${u.name}</div>`;
+      layer.appendChild(dot);
+    });
+  });
+}
+
+function renderHUD(users) {
+  const container = document.getElementById('hud-area');
+  const currentStaff = users.find(u => u.type === 'staff' && u.role === 'evac');
+  const targetGuest = currentStaff ? users.find(u => u.assignedTo === currentStaff._id) : null;
+
+  if (!targetGuest) {
+    container.innerHTML = '';
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="hud-card">
+      <div class="hud-title">📡 Active Tactical Objective</div>
+      <div class="hud-body">
+        <div class="hud-guest">${targetGuest.name}</div>
+        <div class="hud-meta">
+          <span>Status: <strong style="color:var(--success)">${targetGuest.status.toUpperCase()}</strong></span>
+          <span class="hud-dist">LOC: ${targetGuest.node}</span>
+        </div>
+        <div style="font-size:10px; color:var(--text-muted); margin-top:8px; border-top:1px solid rgba(255,255,255,0.1); padding-top:4px;">
+          ESCORT TO: ${currentMeetingPoint || 'M1'}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderFireZones(){
+  const layer=document.getElementById('map-fire-layer');layer.innerHTML='';
+  activeFireNodes.forEach(node=>{
+    const pos=NODE_POSITIONS[node];if(!pos)return;
+    const z=document.createElement('div');z.className='fire-zone';
+    z.style.left=pos.x+'%';z.style.top=pos.y+'%';z.style.width=z.style.height='60px';
+    layer.appendChild(z);
+  });
+}
+
+function renderLogs(logs){
+  const el=document.getElementById('alert-list');
+  // Only show evac, fire, warning, or success logs on Staff 2
+  const filtered = logs.filter(log => {
+    const m = (log.message||'').toLowerCase();
+    return m.includes('fire') || m.includes('🔥') || m.includes('evac') || m.includes('🟢') || m.includes('green') || m.includes('safe') || m.includes('⚠') || m.includes('⚠️') || m.includes('✅') || m.includes('🚶');
+  });
+
+  if(!filtered.length){el.innerHTML='<div class="empty-state">No evac logs yet</div>';return;}
+  const recent=[...filtered].reverse().slice(0,8);
+  
+  el.innerHTML=recent.map(log=>{
+    const msg=log.message||'';
+    const m = msg.toLowerCase();
+    
+    const isFire = m.includes('🔥') || m.includes('fire') || m.includes('🔴');
+    const isWarn = m.includes('⚠') || m.includes('⚠️');
+    const isSuccess = m.includes('✅') || m.includes('safe');
+    
+    const type = isFire ? 'danger' : isWarn ? 'warning' : isSuccess ? 'success' : 'info';
+    const icon = isFire ? '🔥' : isWarn ? '⚠️' : isSuccess ? '✅' : '🚶';
+    const lbl = isFire ? 'FIRE' : isWarn ? 'ALERT' : isSuccess ? 'SAFE' : 'EVAC';
+    const time=new Date(log.timestamp).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    
+    return`<div class="alert-row al-${type}">
+      <div class="alert-head"><span class="alert-label">${icon} ${lbl}</span><span class="alert-time-stamp">${time}</span></div>
+      <div class="alert-txt">${msg}</div></div>`;
+  }).join('');
+}
+
+function flashFooter(){
+  const el=document.getElementById('footer-timestamp');
+  document.getElementById('footer-time').textContent=new Date().toLocaleTimeString('en-GB');
+  el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash');
+}
+
+async function refresh(){
+  try{
+    const [users,logs]=await Promise.all([apiFetch('/api/users'),apiFetch('/api/logs')]);
+    allUsers=users;
+    try{
+      const fn=localStorage.getItem('rr_fireNodes');if(fn)activeFireNodes=JSON.parse(fn);
+      const mp=localStorage.getItem('rr_meetingPoint');if(mp)currentMeetingPoint=mp;
+    }catch(e){}
+    renderStats(users);renderSafeGuests(users);renderStaff(users);
+    renderGuestList(users);renderMapDots(users);renderFireZones();renderLogs(logs);
+    renderActivePaths();
+    renderHUD(users);
+    flashFooter();
+  }catch(e){console.error('[Staff2]',e.message);}
+}
+
+refresh();
+setInterval(refresh, 1000); // Higher frequency for Staff 2 live sync
+
+window.addEventListener('storage', (e) => {
+  if(e.key === 'rr_activePaths') renderActivePaths();
+  if(e.key === 'floorPlanImage' && e.newValue) document.getElementById('map-img').src = e.newValue;
+  if(e.key === 'floorPlanGraph' && e.newValue) {
+    try {
+      const g = JSON.parse(e.newValue);
+      Object.assign(NODE_POSITIONS, g.NODE_POSITIONS);
+    } catch(err) {}
+  }
+});
+</script>
 </body>
 </html>

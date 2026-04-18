@@ -66,17 +66,31 @@
     .badge-live    { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:4px; font-size:11px; font-weight:700; letter-spacing:.06em; background:rgba(34,197,94,.12); color:var(--success); border:1px solid rgba(34,197,94,.3); animation:breathing 2s infinite; }
 
     /* Header */
-    header { width:100%; background:var(--bg-card); border-bottom:1px solid var(--border); padding:8px 16px; display:flex; align-items:center; gap:12px; flex-shrink:0; flex-wrap:nowrap; overflow:hidden; }
-    .header-brand { display:flex; align-items:center; gap:6px; white-space:nowrap; flex-shrink:1; min-width:0; }
-    .brand-title  { font-size:18px; font-weight:800; color:var(--text-white); letter-spacing:-.01em; overflow:hidden; text-overflow:ellipsis; }
-    .header-stats { display:flex; gap:8px; flex:1; justify-content:flex-end; min-width:0; }
-    .stat-card { background:var(--bg-primary); border:1px solid var(--border); border-radius:var(--radius); padding:6px 10px; min-width:110px; flex:0 1 auto; max-width:160px; }
-    .stat-label{ font-size:9px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; margin-bottom:2px; white-space:nowrap; }
-    .stat-value{ font-size:16px; font-weight:800; line-height:1; margin-bottom:2px; }
-    .stat-sub  { font-size:9px; color:var(--text-muted); display:flex; align-items:center; gap:4px; white-space:nowrap; }
-    .stat-card.danger  .stat-label,.stat-card.danger  .stat-value { color:var(--danger);  animation:card-glow-red   2s infinite; }
-    .stat-card.success .stat-label,.stat-card.success .stat-value { color:var(--success); animation:card-glow-green 2s infinite; }
-    .stat-card.warning .stat-label,.stat-card.warning .stat-value { color:var(--warning); animation:card-glow-amber 2s infinite; }
+    header { width:100%; background:var(--bg-card); border-bottom:1px solid var(--border); padding:8px 24px; display:flex; align-items:center; gap:20px; flex-shrink:0; flex-wrap:nowrap; overflow:hidden; }
+    .header-brand { display:flex; align-items:center; gap:6px; white-space:nowrap; flex-shrink:0; }
+    .brand-title  { font-size:18px; font-weight:800; color:var(--text-white); letter-spacing:-.01em; }
+    
+    .header-nav { display:flex; gap:8px; flex:1; }
+    
+    .header-stats { display:flex; gap:24px; justify-content:flex-end; min-width:0; margin-left: auto; }
+    .stat-card { display:flex; flex-direction:column; min-width:100px; }
+    .stat-label { font-size:10px; font-weight:700; color:var(--text-muted); letter-spacing:0.05em; margin-bottom:2px; }
+    .stat-value { font-size:16px; font-weight:800; color:var(--text-white); white-space:nowrap; }
+    .stat-sub   { font-size:10px; color:var(--text-muted); font-family:monospace; }
+    .stat-card.danger .stat-value { color:var(--danger); }
+    .stat-card.success .stat-value { color:var(--success); }
+    .stat-card.warning .stat-label,.stat-card.warning .stat-value { color:var(--warning); }
+    .stat-card.info .stat-value { color:var(--info); }
+    
+    .header-nav { display:flex; gap:12px; margin-left:20px; align-items:center; border-left:1px solid var(--border); padding-left:20px; }
+    .nav-item {
+      color:var(--text-gray); text-decoration:none; font-size:11px; font-weight:700;
+      letter-spacing:0.05em; text-transform:uppercase; transition:all 0.2s;
+      display:flex; align-items:center; gap:6px; padding:6px 10px; border-radius:4px;
+    }
+    .nav-item:hover { color:#fff; background:rgba(255,255,255,0.05); }
+    .nav-item.active { color:var(--info); border:1px solid rgba(56,189,248,0.2); background:rgba(56,189,248,0.05); }
+    .nav-dot { width:6px; height:6px; border-radius:50%; background:currentColor; }
 
     /* Header Simulate & Stop Buttons - Epic Premium */
     .header-actions { display:flex; gap:8px; align-items:center; flex-shrink:0; }
@@ -107,20 +121,12 @@
     #btn-sim-open svg { width:14px; height:14px; fill:currentColor; filter: drop-shadow(0 0 4px rgba(255,100,100,0.8)); animation:pulse-scale 2s infinite; }
 
     #btn-stop-sim {
-      padding:8px 16px; 
-      background:linear-gradient(145deg, rgba(38,38,38,0.6) 0%, rgba(23,23,23,0.9) 100%);
-      border:1px solid rgba(255,255,255,0.08);
-      color:#a3a3a3; border-radius:8px; font-size:12px; font-weight:800;
-      cursor:pointer; letter-spacing:0.06em; text-transform:uppercase;
-      display:flex; align-items:center; gap:6px; flex-shrink:0;
-      transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      padding:8px 16px; background:rgba(255,255,255,0.05); border:1px solid var(--border);
+      color:var(--text-gray); border-radius:6px; font-size:11px; font-weight:800;
+      cursor:pointer; text-transform:uppercase; letter-spacing:0.05em; transition:all 0.2s;
     }
     #btn-stop-sim:hover:not(:disabled) {
-      background:linear-gradient(145deg, rgba(64,64,64,0.8) 0%, rgba(38,38,38,1) 100%);
-      border-color:rgba(255,255,255,0.2); color:#fff;
-      box-shadow:0 6px 16px rgba(0,0,0,0.4);
-      transform:translateY(-1px);
+      background:rgba(220,38,38,0.2); border-color:var(--danger); color:#fff;
     }
     #btn-stop-sim:disabled { opacity:0.3; cursor:not-allowed; }
 
@@ -229,7 +235,7 @@
 
     .map-card { flex:1; display:flex; flex-direction:column; position:relative; animation:map-glow 4s infinite; }
     .map-wrapper { position:relative; flex:1; min-height:0; background:#111; border-radius:6px; overflow:hidden; border:1px solid var(--border); }
-    .map-wrapper img { width:100%; height:100%; object-fit:contain; display:block; border-radius:6px; background:#000; }
+    .map-wrapper img { width:100%; height:100%; object-fit:fill; display:block; border-radius:6px; background:#000; }
     .map-wrapper::before { content:''; position:absolute; inset:0; background:repeating-linear-gradient(to bottom,transparent 0,transparent 4px,rgba(255,255,255,.03) 5px); pointer-events:none; z-index:5; }
     .map-wrapper::after  { content:''; position:absolute; top:0; left:0; width:100%; height:30%; background:linear-gradient(to bottom,transparent,rgba(56,189,248,.1),transparent); animation:scanline 5s linear infinite; pointer-events:none; z-index:6; }
     .map-live-indicator { position:absolute; top:10px; left:10px; display:flex; align-items:center; gap:6px; color:var(--success); font-size:11px; font-weight:700; background:rgba(0,0,0,.6); padding:4px 8px; border-radius:4px; border:1px solid rgba(34,197,94,.3); z-index:20; }
@@ -394,9 +400,10 @@
   /* Existing utility for loader hidden state */
   #boot-loader.hidden .cool-progress-fill { animation-play-state: paused; }
   
-  @keyframes dash {
-    to { stroke-dashoffset: -20; }
-  }
+ @keyframes dash-flow {
+  from { stroke-dashoffset: 0; }
+  to   { stroke-dashoffset: -8; } /* -(2+6) */
+}
   @keyframes path-glow-red {
     0%, 100% { filter: drop-shadow(0 0 2px rgba(255,77,77,0.4)); }
     50%      { filter: drop-shadow(0 0 6px rgba(255,77,77,0.8)); }
@@ -409,11 +416,12 @@
     to { stroke-dashoffset: 0; }
   }
   </style>
+  <script src="config.js"></script>
 </head>
 <body>
 
 <!-- ── RAPID RESPONSE MISSION LOADER ───────────────────────── -->
-<div id="boot-loader">
+<div id="boot-loader" class="hidden" style="display:none !important;">
   <div class="floating-particles"></div>
   <div class="mvp-container">
     <div class="mvp-logo" style="letter-spacing: 0.25em; font-size: 24px; font-weight: 800; color: #fff; text-shadow: 0 0 20px rgba(56,189,248,0.4);">RAPID RESPONSE</div>
@@ -522,10 +530,10 @@
       <svg viewBox="0 0 24 24"><path d="M12,23 C8.134,23 5,19.866 5,16 C5,13.541 6.268,11.385 8.241,10.158 C8.083,10.669 8,11.205 8,11.75 C8,15.201 10.799,18 14.25,18 C14.64,18 15.02,17.962 15.389,17.89 C16.375,19.467 14.331,21.5 12,21.5 C12,21.5 13.905,19.988 13.882,18.729 C13.844,16.593 11.961,15.115 11.961,13.063 C11.961,10.601 13.722,8.441 15.86,7.568 C15.422,6.074 14.234,4.925 12.721,4.408 C13.364,5.438 13.75,6.666 13.75,7.969 C13.75,11.008 11.288,13.47 8.249,13.47 C7.897,13.47 7.556,13.435 7.227,13.37 C6.467,14.646 6.035,16.149 6.035,17.75 C6.035,21.063 8.722,23.75 12.035,23.75 C12.247,23.75 12.456,23.738 12.661,23.714 C12.443,23.826 12.214,23.917 11.976,23.98 C11.984,23.987 11.992,23.993 12,24 L12,23 Z M15,2 C15,2 14.453,3.785 15.86,5.336 C17.268,6.887 18,8.887 18,11 C18,14.313 15.313,17 12,17 C8.687,17 6,14.313 6,11 C6,9.278 6.726,7.708 7.886,6.586 C7.332,7.701 7,8.966 7,10.25 C7,13.011 9.239,15.25 12,15.25 C14.254,15.25 16.155,13.743 16.782,11.666 C17.378,9.754 16.895,7.633 15.545,6 C15.84,5.334 16,4.606 16,3.844 C16,3.13 15.86,2.449 15.6,1.821 C15.405,1.879 15.204,1.936 15,2 Z"/></svg>
       Simulate Fire
     </button>
-    <button id="btn-stop-sim" onclick="simStop()" >
-      ⏹ Stop 
-    </button>
+    <button id="btn-stop-sim" onclick="simStop()">STOP</button>
   </div>
+  
+  <div style="flex: 1;"></div>
 
   <div class="header-stats">
     <div class="stat-card danger">
@@ -638,14 +646,14 @@
     <div class="card">
       <div class="card-title">Staff Views</div>
       <div class="staff-switch-btns">
-        <a href="staff 1.html" class="staff-switch-btn staff-switch-btn--rescue">
-          <span class="staff-switch-icon">🟠</span>
-          <span class="staff-switch-label"><span class="staff-switch-role">Staff‑1</span><span class="staff-switch-desc">Rescue POV</span></span>
+        <a href="staff 1.html" target="_self" class="staff-switch-btn staff-switch-btn--rescue">
+          <span class="staff-switch-icon">🚑</span>
+          <span class="staff-switch-label"><span class="staff-switch-role">Staff-1</span><span class="staff-switch-desc">Rescue POV</span></span>
           <span class="staff-switch-arrow">→</span>
         </a>
-        <a href="staff 2.html" class="staff-switch-btn staff-switch-btn--evac">
-          <span class="staff-switch-icon">🟢</span>
-          <span class="staff-switch-label"><span class="staff-switch-role">Staff‑2</span><span class="staff-switch-desc">Evacuation POV</span></span>
+        <a href="staff 2.html" target="_self" class="staff-switch-btn staff-switch-btn--evac">
+          <span class="staff-switch-icon">🚶</span>
+          <span class="staff-switch-label"><span class="staff-switch-role">Staff-2</span><span class="staff-switch-desc">Evacuation POV</span></span>
           <span class="staff-switch-arrow">→</span>
         </a>
       </div>
@@ -688,15 +696,18 @@ function assignStaffToGuests(users) {
   const staff = users.filter(u => u.type === 'staff');
   const guests = users.filter(u => u.type === 'guest' && u.status === 'help');
 
-  if (!staff.length) return; // ✅ ADD THIS LINE
+  if (!staff.length || !guests.length) return;
 
   guests.forEach((g, i) => {
     const s = staff[i % staff.length];
 
+    // Assign the STAFF to the GUEST
     apiPost('/api/user-status', {
-      userId: s._id,
-      assignedTo: g._id
+      userId: g._id,
+      assignedTo: s._id
     });
+    
+    console.log(`[ASSIGN] Guest ${g.name} assigned to Staff ${s.name}`);
   });
 }
 
@@ -803,9 +814,16 @@ async function processFloorPlan() {
                 
                 // ✅ Save to localStorage
                 const reader = new FileReader();
-                reader.onload = function(e) {
+                reader.onload = async function(e) {
                   localStorage.setItem('floorPlanImage', e.target.result);
-                    localStorage.setItem('floorPlanGraph', JSON.stringify(generatedGraph));
+                  localStorage.setItem('floorPlanGraph', JSON.stringify(generatedGraph));
+                  
+                  // Sync graph to server for background simulation
+                  await apiPost('/api/graph', {
+                    nodePositions: generatedGraph.NODE_POSITIONS,
+                    nodeAdjacency: generatedGraph.NODE_ADJACENCY,
+                    meetingPoints: generatedGraph.MEETING_POINTS
+                  });
  
                     console.log('✅ Saved to localStorage');
                 };
@@ -1170,6 +1188,8 @@ async function simStop() {
     );
 
     activeFireNodes = [];
+    _pathCache = {};
+    try { localStorage.setItem('rr_activePaths', '{}'); localStorage.setItem('rr_fireNodes', '[]'); localStorage.setItem('rr_simRunning','0'); } catch(e) {}
     // Clear all SVG path lines from animations
     document.getElementById('path-layer').querySelectorAll('path').forEach(p => p.remove());
     try { await apiPost('/api/logs/clear', {}); } catch(e) {}
@@ -1239,47 +1259,56 @@ async function simTriggerFire() {
   setSimStatus('Triggering fire at node ' + selectedSimNode + '…', '');
   await showSimProgress(5);
   try {
-    // 1. FIRST: Log fire incident
     await logAction(`🔥 Fire incident caught at Node ${selectedSimNode}`);
-    
     await apiPost('/api/fire', { node: selectedSimNode });
     activeFireNodes = [selectedSimNode];
     incidentData = { type: 'fire', node: selectedSimNode, blockedNodes: [selectedSimNode] };
+    localStorage.setItem('rr_activeFireNodes', JSON.stringify(activeFireNodes));
+    localStorage.setItem('rr_simulationRunning', 'true');
     if (!incidentStart) { incidentStart = new Date(); startIncidentTimer(incidentStart); }
     renderFireZones();
-
     await updateGuestStatusByFire();
     await refresh();
 
-    // 2. SECOND: Log meeting point selection
     const meetingPoint = getFarthestNodeFromFire();
     await logAction(`📍 Meeting point selected: Node ${meetingPoint}`);
+    try { localStorage.setItem('rr_meetingPoint', meetingPoint); } catch(e) {}
 
-    // IMPORTANT: Set simulationRunning BEFORE calling movement functions
+    // Assign roles if not set
+    const staff = allUsers.filter(u => u.type === 'staff');
+    if (staff.length >= 1) {
+      const needsRole = staff.filter(s => !s.role);
+      if (needsRole.length > 0) {
+        await Promise.all(needsRole.map((s, i) =>
+          apiPost('/api/user-status', { userId: s._id, role: i % 2 === 0 ? 'rescue' : 'evac' })
+        ));
+        // ── FIX: wait for DB writes to propagate before running movement logic ──
+        await delay(600);
+        await refresh();
+      }
+    }
+
     simulationRunning = true;
-    startSimRefreshLoop(); // start background UI refresh for parallel animations
-    
-    // 3. THIRD: Start evacuation and rescue in PARALLEL
+    startSimRefreshLoop();
+
     console.log('[SIM] Starting runEvacuation + runRescue in parallel...');
+
+    // ── Run both in true parallel — each reads its own fresh snapshot ──
     const results = await Promise.allSettled([
       runEvacuation(meetingPoint),
       runRescue(meetingPoint)
     ]);
+
     results.forEach((r, i) => {
-      const name = i === 0 ? 'EVAC' : 'RESCUE';
-      if (r.status === 'rejected') console.error(`[${name}] FAILED:`, r.reason);
-      else console.log(`[${name}] completed OK`);
+      if (r.status === 'rejected') console.error(`[SIM] Worker ${i} failed:`, r.reason);
     });
 
-    setSimStatus('✔ Fire triggered at node ' + selectedSimNode, 'ok');
-    document.getElementById('btn-spread-fire').disabled = false;
-    const btnChaos = document.getElementById('btn-chaos');
-    if (btnChaos) btnChaos.disabled = false;
-    const btnStop = document.getElementById('btn-stop-sim');
-    if (btnStop) btnStop.disabled = false;
     await refresh();
+    await checkEvacuationComplete(meetingPoint);
+    setSimStatus('✔ Deployment complete. All personnel safely navigated.', 'ok');
+    document.getElementById('btn-spread-fire').disabled = true;
   } catch (e) {
-    simulationRunning = false; // Reset on error
+    simulationRunning = false;
     setSimStatus('✗ Failed: ' + e.message, 'err');
     btn.disabled = false;
   }
@@ -1305,6 +1334,7 @@ async function simTriggerFire() {
     try {
       await apiPost('/api/fire-update', { blockedNodes: activeFireNodes });
       if (incidentData) incidentData.blockedNodes = activeFireNodes;
+      localStorage.setItem('rr_activeFireNodes', JSON.stringify(activeFireNodes));
       renderFireZones();
       fireRadius += 5; // increase danger zone
 await updateGuestStatusByFire();
@@ -1369,6 +1399,11 @@ await Promise.allSettled([runEvacuation(newMeetingPoint), runRescue(newMeetingPo
       );
       activeFireNodes = [];
       incidentData    = null;
+      localStorage.removeItem('rr_activeFireNodes');
+      localStorage.setItem('rr_simulationRunning', 'false');
+      localStorage.removeItem('rr_activePaths');
+      localStorage.removeItem('rr_meetingPoint');
+      _pathCache = {};
       // Clear all SVG path lines
       document.getElementById('path-layer').querySelectorAll('path').forEach(p => p.remove());
       renderFireZones();
@@ -1394,22 +1429,64 @@ await Promise.allSettled([runEvacuation(newMeetingPoint), runRescue(newMeetingPo
 
 
   // ── Render fire zone overlays on map ──
-  function renderFireZones() {
-    const layer = document.getElementById('map-fire-layer');
-    layer.innerHTML = '';
-    activeFireNodes.forEach(node => {
-      const pos = NODE_POSITIONS[node];
-      if (!pos) return;
-      const zone = document.createElement('div');
-      zone.className = 'fire-zone';
-      zone.style.left   = pos.x + '%';
-      zone.style.top    = pos.y + '%';
-      zone.style.width  = '60px';
-      zone.style.height = '60px';
-      zone.title = '🔥 Fire at node ' + node;
-      layer.appendChild(zone);
-    });
-  }
+function renderFireZones() {
+  const layer = document.getElementById('map-fire-layer');
+  layer.innerHTML = '';
+
+  activeFireNodes.forEach(node => {
+    const pos = NODE_POSITIONS[node];
+    if (!pos) return;
+
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = `
+      position: absolute;
+      left: ${pos.x}%;
+      top: ${pos.y}%;
+      transform: translate(-50%, -50%);
+      z-index: 12;
+      pointer-events: none;
+      width: 52px;
+      height: 52px;
+    `;
+
+    // Diagonal red hazard stripes background
+    wrapper.innerHTML = `
+      <div style="
+        width: 100%; height: 100%;
+        border-radius: 5px;
+        border: 1.5px solid #ff4d4d;
+        background: repeating-linear-gradient(
+          -45deg,
+          rgba(255, 50, 50, 0.55) 0px,
+          rgba(255, 50, 50, 0.55) 5px,
+          rgba(120, 0, 0, 0.3) 5px,
+          rgba(120, 0, 0, 0.3) 10px
+        );
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        animation: fire-breathe 1.5s ease-in-out infinite;
+        box-shadow: 0 0 10px rgba(255,77,77,0.6);
+      ">
+        <div style="
+          font-size: 9px;
+          font-weight: 900;
+          color: #fff;
+          text-align: center;
+          line-height: 1.2;
+          text-shadow: 0 0 4px #000;
+          background: rgba(0,0,0,0.45);
+          padding: 2px 3px;
+          border-radius: 3px;
+          letter-spacing: 0.04em;
+        ">🚫 RESTRICTED</div>
+      </div>
+    `;
+
+    layer.appendChild(wrapper);
+  });
+}
 
   // ── API helpers ──
   async function apiFetch(path) {
@@ -1433,7 +1510,16 @@ await Promise.allSettled([runEvacuation(newMeetingPoint), runRescue(newMeetingPo
     if (!res.ok) throw new Error(`PATCH ${path} → ${res.status}`);
     return res.json();
   }
-  const delay = ms => new Promise(r => setTimeout(r, ms));
+  // Worker-backed delay — full speed even in background tabs
+  const delay = ms => new Promise(resolve => {
+    if (_timerWorker) {
+      const id = ++_workerSeq;
+      _workerPending[id] = resolve;
+      _timerWorker.postMessage({ action: 'setTimeout', id, ms });
+    } else {
+      setTimeout(resolve, ms);
+    }
+  });
 
   // ── Render functions ──
   function renderStats(users) {
@@ -1605,20 +1691,41 @@ const oy = Math.sin(angle) * radius;
       });
     });
   }
-let simulationRunning = false;
+let simulationRunning = localStorage.getItem('rr_simulationRunning') === 'true';
 let _simRefreshTimer = null;
+let _pathCache = JSON.parse(localStorage.getItem('rr_activePaths') || '{}');
 
-// Fast background refresh loop — keeps UI in sync during parallel animations
+// ── Background-safe timer (Web Worker) ───────────────────────────────────
+// Browsers throttle setTimeout to 1s+ in background tabs. Workers are NOT.
+let _timerWorker = null, _workerSeq = 0;
+const _workerPending = {};
+(function initTimerWorker() {
+  try {
+    _timerWorker = new Worker('timer-worker.js');
+    _timerWorker.onmessage = ({ data }) => {
+      const cb = _workerPending[data.id];
+      if (cb) { delete _workerPending[data.id]; cb(); }
+    };
+    _timerWorker.onerror = () => { _timerWorker = null; };
+  } catch(e) { console.warn('[TimerWorker] unavailable:', e.message); }
+})();
+
+// Fast background refresh loop — immune to background-tab throttling
+let _simLoopActive = false;
 function startSimRefreshLoop() {
   stopSimRefreshLoop();
+  _simLoopActive = true;
   async function tick() {
-    if (!simulationRunning) return;
+    if (!simulationRunning || !_simLoopActive) return;
     try { await refresh(); } catch(e) { console.error('sim-refresh', e); }
-    _simRefreshTimer = setTimeout(tick, 1000);
+    if (!simulationRunning || !_simLoopActive) return;
+    await delay(1000);
+    tick();
   }
   tick();
 }
 function stopSimRefreshLoop() {
+  _simLoopActive = false;
   if (_simRefreshTimer) { clearTimeout(_simRefreshTimer); _simRefreshTimer = null; }
 }
 
@@ -1630,7 +1737,10 @@ async function simulationLoop() {
   } catch (e) {
     console.error("Simulation loop error:", e);
   }
-  setTimeout(simulationLoop, 5000);
+  if (simulationRunning) {
+    await delay(5000);
+    simulationLoop();
+  }
 }
 
   function renderLogs(logs) {
@@ -1705,9 +1815,14 @@ async function logAction(msg) {
       renderStaff(users);
       renderGuestList(users);
       renderMapDots(users);
+      renderNodeLabels(); // ← add this line
       renderLogs(logs);
       flashFooter();
-    
+      // Broadcast fire state to staff tabs
+      try {
+        localStorage.setItem('rr_fireNodes', JSON.stringify(activeFireNodes));
+        localStorage.setItem('rr_simRunning', simulationRunning ? '1' : '0');
+      } catch(e) {}
     } catch(e) { console.error('[RAPID RESPONSE]', e.message); }
   }
 function getFarthestNodeFromFire() {
@@ -1755,28 +1870,47 @@ function getFarthestNodeFromFire() {
 function buildPathData(points) {
   if (points.length < 1) return '';
   if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
+  if (points.length === 2) return `M ${points[0].x} ${points[0].y} L ${points[1].x} ${points[1].y}`;
 
+  // Smooth curves through waypoints using quadratic bezier
+  // Each segment curves around the midpoint between nodes
   let d = `M ${points[0].x} ${points[0].y}`;
-  for (let i = 1; i < points.length; i++) {
-    d += ` L ${points[i].x} ${points[i].y}`;
+
+  for (let i = 0; i < points.length - 1; i++) {
+    const curr = points[i];
+    const next = points[i + 1];
+
+    if (i === points.length - 2) {
+      // Last segment: straight line to end
+      d += ` L ${next.x} ${next.y}`;
+    } else {
+      const after = points[i + 2];
+      // Midpoint between current→next and next→after
+      const mx1 = (curr.x + next.x) / 2;
+      const my1 = (curr.y + next.y) / 2;
+      const mx2 = (next.x + after.x) / 2;
+      const my2 = (next.y + after.y) / 2;
+      // Line to first midpoint, then quadratic curve through junction
+      d += ` L ${mx1} ${my1} Q ${next.x} ${next.y} ${mx2} ${my2}`;
+    }
   }
+
   return d;
 }
 
 // ── Evacuation: evac staff escorts non-help guests to meeting point ONE BY ONE ──
 async function runEvacuation(meetingPoint) {
   if (!simulationRunning) return;
-  console.log('[EVAC] ▶ runEvacuation started, meetingPoint:', meetingPoint);
+  console.log('[EVAC] ▶ started, meetingPoint:', meetingPoint);
 
   const safeGraph = getSafeGraph(activeFireNodes);
 
-  // Take our OWN fresh snapshot
+  // Fresh snapshot
   let users;
   try { users = await apiFetch('/api/users'); } catch(e) { users = allUsers; }
 
-  const evacStaff = users.filter(u => u.type === 'staff' && u.role === 'evac');
-
-  // Evacuate ALL guests who aren't 'help' (i.e. safe + idle) — not just 'safe'
+  const evacStaff     = users.filter(u => u.type === 'staff' && u.role === 'evac');
+  // Escort all non-help, non-moving guests (idle + safe)
   const allEvacGuests = users.filter(u =>
     u.type === 'guest' && u.status !== 'help' && u.status !== 'moving'
   );
@@ -1784,110 +1918,135 @@ async function runEvacuation(meetingPoint) {
   console.log('[EVAC] evacStaff:', evacStaff.length, 'evacGuests:', allEvacGuests.length);
 
   if (!evacStaff.length) {
-    logAction(`🟢 No evacuation staff available.`);
-    console.log('[EVAC] ✗ No evac staff found');
+    logAction('⚠️ No evacuation staff found (role=evac). Skipping evac worker.');
     return;
   }
 
-  // First: mark guests already AT the meeting point as safe immediately
+  logAction(`🟢 Evac started — ${evacStaff.length} staff, ${allEvacGuests.length} guests to escort`);
+
+  // Mark guests already at meeting point as safe immediately
   const guestsAtMeeting = allEvacGuests.filter(g => g.node === meetingPoint);
   const guestsToEscort  = allEvacGuests.filter(g => g.node !== meetingPoint);
 
   for (const g of guestsAtMeeting) {
-    apiPost('/api/user-status', { userId: g._id, status: 'safe', node: meetingPoint })
-      .catch(e => console.error('mark-safe', e));
+    apiPost('/api/user-status', { userId: g._id, status: 'safe', node: meetingPoint }).catch(() => {});
   }
-  if (guestsAtMeeting.length) {
-    logAction(`🟢 ${guestsAtMeeting.length} guest(s) already at meeting point ${meetingPoint} — marked safe`);
-  }
+  if (guestsAtMeeting.length) logAction(`🟢 ${guestsAtMeeting.length} guest(s) already at ${meetingPoint} — marked safe`);
 
+  // ── No guests to escort: still move evac staff to meeting point ──
   if (!guestsToEscort.length) {
-    logAction(`🟢 All guests already at meeting point — evac staff heading there.`);
-    // Move evac staff to meeting point anyway
+    logAction(`🟢 No guests to escort — evac staff heading to ${meetingPoint}`);
     for (const staff of evacStaff) {
       if (!simulationRunning) return;
-      if (staff.node === meetingPoint) continue;
-      const path = shortestPath(safeGraph, staff.node, meetingPoint);
-      if (path && path.length >= 2) {
-        logAction(`🚶 Evac staff ${staff.name} heading to meeting point ${meetingPoint}`);
-        await animateMovement(staff, path, meetingPoint, 'green');
+      if (staff.node === meetingPoint) {
         await apiPost('/api/user-status', { userId: staff._id, status: 'idle', node: meetingPoint });
+        continue;
       }
+      // Use full GRAPH to reach meeting point (safeGraph might exclude staff's node)
+      const path = shortestPath(GRAPH, staff.node, meetingPoint, true)
+                || shortestPath(safeGraph, staff.node, meetingPoint, true);
+      if (path && path.length >= 2) {
+        logAction(`🚶 Evac ${staff.name} returning to base ${meetingPoint}`);
+        await animateMovement(staff, path, meetingPoint, 'green');
+      }
+      await apiPost('/api/user-status', { userId: staff._id, status: 'idle', node: meetingPoint });
+      staff.node = meetingPoint;
     }
-    console.log('[EVAC] ✔ No guests to escort, staff moved');
+    console.log('[EVAC] ✔ No guests, staff moved to meeting point');
     return;
   }
 
-  logAction(`🟢 Evac staff escorting ${guestsToEscort.length} guest(s) to Node ${meetingPoint}`);
+  logAction(`🟢 Escorting ${guestsToEscort.length} guest(s) to Node ${meetingPoint}`);
 
-  // Parallel workers: each evac staff handles a queue of guests one by one
+  // Round-robin distribute guests across evac staff
   const staffQueues = evacStaff.map(() => []);
-  guestsToEscort.forEach((g, i) => {
-    staffQueues[i % evacStaff.length].push(g);
-  });
+  guestsToEscort.forEach((g, i) => staffQueues[i % evacStaff.length].push(g));
 
   const workerPromises = evacStaff.map(async (staff, staffIndex) => {
     const queue = staffQueues[staffIndex];
-    let currentStaff = staff;
+    let currentStaff = { ...staff };
 
     for (const guest of queue) {
       if (!simulationRunning) break;
 
-      console.log(`[EVAC] worker ${staffIndex} handling guest=${guest.name} at ${guest.node}`);
+      console.log(`[EVAC] worker ${staffIndex} → guest=${guest.name} at ${guest.node}`);
 
-      // Get fresh staff position
+      // Refresh staff position from DB
       try {
         const fu = await apiFetch('/api/users');
-        currentStaff = fu.find(u => u._id === staff._id) || currentStaff;
+        const fresh = fu.find(u => u._id === staff._id);
+        if (fresh) currentStaff = { ...fresh };
       } catch(e) {}
 
-      // 1. Staff goes TO the guest
+      // ── STEP 1: Staff walks TO the guest (green path) ──
       if (currentStaff.node !== guest.node) {
-        const toGuest = shortestPath(safeGraph, currentStaff.node, guest.node, true);
+        const toGuest = shortestPath(GRAPH, currentStaff.node, guest.node, true);
         if (!toGuest || toGuest.length < 2) {
-          logAction(`❌ Evac staff ${currentStaff.name} cannot reach ${guest.name}`);
-          continue;
+          if (currentStaff.node === guest.node) {
+            logAction(`🚶 Evac ${currentStaff.name} is already with ${guest.name}`);
+          } else {
+            logAction(`❌ Evac ${currentStaff.name} cannot reach ${guest.name} at ${guest.node}`);
+            continue;
+          }
+        } else {
+          logAction(`🚶 Evac ${currentStaff.name} going to ${guest.name} at Node ${guest.node}`);
+          await animateMovement(currentStaff, toGuest, guest.node, 'green');
+          currentStaff.node = guest.node;
         }
-        logAction(`🚶 ${currentStaff.name} going to ${guest.name} at Node ${guest.node}`);
-        await animateMovement(currentStaff, toGuest, guest.node, 'green');
-        currentStaff.node = guest.node;
+      } else {
+        logAction(`🚶 Evac ${currentStaff.name} is already with ${guest.name} at ${guest.node}`);
       }
 
       if (!simulationRunning) break;
 
-      // 2. Staff + guest walk together to meeting point
-      const toMeeting = shortestPath(safeGraph, guest.node, meetingPoint, true);
+      // ── STEP 2: Staff + guest walk TOGETHER to meeting point (green path) ──
+      const toMeeting = shortestPath(safeGraph, guest.node, meetingPoint, true)
+                     || shortestPath(GRAPH, guest.node, meetingPoint, true);
+
       if (!toMeeting || toMeeting.length < 2) {
-        await apiPost('/api/user-status', { userId: guest._id, status: 'safe', node: meetingPoint });
-        logAction(`✅ ${guest.name} already at meeting point or unreachable`);
+        if (guest.node === meetingPoint) {
+          await apiPost('/api/user-status', { userId: guest._id, status: 'safe', node: meetingPoint });
+          logAction(`✅ ${guest.name} already at meeting point`);
+        } else {
+          logAction(`⚠️ ${guest.name} at ${guest.node} — no safe path to meeting point`);
+        }
         continue;
       }
 
-      logAction(`🚶 ${currentStaff.name} escorting ${guest.name} to Node ${meetingPoint}`);
+      logAction(`🚶 Evac ${currentStaff.name} escorting ${guest.name} → Node ${meetingPoint}`);
+      await apiPost('/api/user-status', { userId: guest._id, status: 'moving', assignedTo: currentStaff._id });
       await animateMovementPair(currentStaff, guest, toMeeting, meetingPoint, 'green');
-      
+
       if (!simulationRunning) break;
 
-      await apiPost('/api/user-status', { userId: guest._id, status: 'safe', node: meetingPoint });
+      await apiPost('/api/user-status', { userId: guest._id, status: 'safe', node: meetingPoint, assignedTo: null });
       await apiPost('/api/user-status', { userId: currentStaff._id, status: 'idle', node: meetingPoint });
       currentStaff.node = meetingPoint;
-      logAction(`✅ ${guest.name} escorted to meeting point ${meetingPoint}`);
+      logAction(`✅ ${guest.name} safely escorted to ${meetingPoint}`);
+    }
+
+    // After all guests handled, make sure evac staff ends at meeting point
+    if (simulationRunning && currentStaff.node !== meetingPoint) {
+      const finalPath = shortestPath(safeGraph, currentStaff.node, meetingPoint, true)
+                     || shortestPath(GRAPH, currentStaff.node, meetingPoint, true);
+      if (finalPath && finalPath.length >= 2) {
+        await animateMovement(currentStaff, finalPath, meetingPoint, 'green');
+      }
+      await apiPost('/api/user-status', { userId: currentStaff._id, status: 'idle', node: meetingPoint });
     }
   });
 
   await Promise.all(workerPromises);
-
   console.log('[EVAC] ✔ runEvacuation finished');
   await checkEvacuationComplete(meetingPoint);
 }
 
 async function runRescue(meetingPoint) {
   if (!simulationRunning) return;
-  console.log('[RESCUE] ▶ runRescue started, meetingPoint:', meetingPoint);
+  console.log('[RESCUE] ▶ started, meetingPoint:', meetingPoint);
 
   const safeGraph = getSafeGraph(activeFireNodes);
 
-  // Take our OWN fresh snapshot
   let users;
   try { users = await apiFetch('/api/users'); } catch(e) { users = allUsers; }
 
@@ -1897,89 +2056,113 @@ async function runRescue(meetingPoint) {
   console.log('[RESCUE] rescueStaff:', rescueStaff.length, 'helpGuests:', helpGuests.length);
 
   if (!helpGuests.length || !rescueStaff.length) {
-    console.log('[RESCUE] ✗ No help guests or rescue staff');
+    if (!rescueStaff.length) logAction('⚠️ No rescue staff found (role=rescue).');
+    else logAction('ℹ️ No guests need rescue at this time.');
     return;
   }
 
   logAction(`🔴 Starting rescue for ${helpGuests.length} guest(s)`);
 
   const staffQueues = rescueStaff.map(() => []);
-  helpGuests.forEach((g, i) => {
-    staffQueues[i % rescueStaff.length].push(g);
-  });
+  helpGuests.forEach((g, i) => staffQueues[i % rescueStaff.length].push(g));
 
   const workerPromises = rescueStaff.map(async (staff, staffIndex) => {
     const queue = staffQueues[staffIndex];
-    let currentStaff = staff;
+    let currentStaff = { ...staff };
 
     for (const guest of queue) {
       if (!simulationRunning) break;
 
-      console.log(`[RESCUE] worker ${staffIndex} handling guest=${guest.name}`);
-
-      // Get fresh staff position
+      // Refresh staff position
       try {
         const fu = await apiFetch('/api/users');
-        currentStaff = fu.find(u => u._id === staff._id) || currentStaff;
+        const fresh = fu.find(u => u._id === staff._id);
+        if (fresh) currentStaff = { ...fresh };
       } catch(e) {}
 
-      // Path: staff → guest (red path)
-      const toGuest = shortestPath(GRAPH, currentStaff.node, guest.node, true);
-      if (!toGuest || toGuest.length < 2) {
-        if (currentStaff.node === guest.node) {
-          logAction(`🚑 ${currentStaff.name} is already at ${guest.name}'s location`);
+      // ── STEP 1: Staff → Guest (red path) ──
+      if (currentStaff.node !== guest.node) {
+        const toGuest = shortestPath(GRAPH, currentStaff.node, guest.node, true);
+        if (!toGuest || toGuest.length < 2) {
+          if (currentStaff.node === guest.node) {
+            logAction(`🚑 ${currentStaff.name} is already at ${guest.name}'s location`);
+          } else {
+            logAction(`❌ ${currentStaff.name} cannot reach ${guest.name} at ${guest.node}`);
+            continue;
+          }
         } else {
-          logAction(`❌ ${currentStaff.name} cannot reach ${guest.name} at Node ${guest.node}`);
-          continue;
+          logAction(`🚑 ${currentStaff.name} heading to rescue ${guest.name} at Node ${guest.node}`);
+          await animateMovement(currentStaff, toGuest, guest.node, 'red');
+          currentStaff.node = guest.node;
         }
       } else {
-        logAction(`🚑 ${currentStaff.name} heading to rescue ${guest.name} at Node ${guest.node}`);
-        await animateMovement(currentStaff, toGuest, guest.node, 'red');
-        currentStaff.node = guest.node;
+        logAction(`🚑 ${currentStaff.name} is already at ${guest.name}'s location`);
       }
 
       if (!simulationRunning) break;
 
-      await apiPost('/api/user-status', { userId: guest._id, status: 'moving' });
+      await apiPost('/api/user-status', { userId: guest._id, status: 'moving', assignedTo: currentStaff._id });
 
-      // Path: guest → meeting point (red path)
-      const toMeeting = shortestPath(safeGraph, guest.node, meetingPoint, true);
+      // ── STEP 2: Staff + Guest → Meeting Point (red path) ──
+      const toMeeting = shortestPath(safeGraph, guest.node, meetingPoint, true)
+                     || shortestPath(GRAPH, guest.node, meetingPoint, true);
+
       if (!toMeeting || toMeeting.length < 2) {
         if (guest.node === meetingPoint) {
           await apiPost('/api/user-status', { userId: guest._id, status: 'safe', node: meetingPoint });
           logAction(`✅ ${guest.name} already at meeting point`);
         } else {
-          logAction(`⚠️ ${guest.name} at Node ${guest.node} is surrounded by fire — cannot evacuate`);
+          logAction(`⚠️ ${guest.name} at ${guest.node} is surrounded by fire — cannot evacuate`);
         }
         continue;
       }
 
-      logAction(`🚑 ${currentStaff.name} escorting ${guest.name} to Node ${meetingPoint}`);
+      logAction(`🚑 ${currentStaff.name} escorting ${guest.name} → Node ${meetingPoint}`);
       await animateMovementPair(currentStaff, guest, toMeeting, meetingPoint, 'red');
 
       if (!simulationRunning) break;
 
-      await apiPost('/api/user-status', { userId: guest._id, status: 'safe', node: meetingPoint });
+      await apiPost('/api/user-status', { userId: guest._id, status: 'safe', node: meetingPoint, assignedTo: null });
       await apiPost('/api/user-status', { userId: currentStaff._id, status: 'idle', node: meetingPoint });
       currentStaff.node = meetingPoint;
-      logAction(`✅ ${guest.name} rescued and reached Node ${meetingPoint}`);
+      logAction(`✅ ${guest.name} rescued to Node ${meetingPoint}`);
+    }
+
+    // Ensure rescue staff ends at meeting point
+    if (simulationRunning && currentStaff.node !== meetingPoint) {
+      const finalPath = shortestPath(safeGraph, currentStaff.node, meetingPoint, true)
+                     || shortestPath(GRAPH, currentStaff.node, meetingPoint, true);
+      if (finalPath && finalPath.length >= 2) {
+        await animateMovement(currentStaff, finalPath, meetingPoint, 'red');
+      }
+      await apiPost('/api/user-status', { userId: currentStaff._id, status: 'idle', node: meetingPoint });
     }
   });
 
   await Promise.all(workerPromises);
-
   console.log('[RESCUE] ✔ runRescue finished');
   await checkEvacuationComplete(meetingPoint);
 }
 
 async function checkEvacuationComplete(meetingPoint) {
-  await refresh(); // get latest state
-  const guests = allUsers.filter(u => u.type === 'guest');
-  const allSafe = guests.every(u => u.status === 'safe' || u.node === meetingPoint);
+  // Take a fresh snapshot to be absolutely sure
+  const users = await apiFetch('/api/users');
+  allUsers = users;
+  
+  const guests = users.filter(u => u.type === 'guest');
+  // Strictly check that EVERY guest dot is physically at the meeting point node
+  const allSafe = guests.length > 0 && guests.every(u => u.node === meetingPoint);
 
-  if (allSafe && guests.length > 0) {
-    await logAction(`🟩 EVACUATION COMPLETE — All ${guests.length} guest(s) safely reached Node ${meetingPoint}`);
+  if (allSafe && guests.length > 0 && simulationRunning) {
+    console.log("🏁 Mission Complete: All guests are safe at Node " + meetingPoint);
+    await logAction(`🟩 MISSION SUCCESS — All ${guests.length} guest(s) safely reached Node ${meetingPoint}`);
     showEvacCompletePopup(meetingPoint, guests.length);
+    
+    // Auto-stop the simulation loops and reset states
+    simulationRunning = false;
+    stopSimRefreshLoop();
+    document.getElementById('btn-stop-sim').disabled = true;
+    document.getElementById('btn-trigger-fire').disabled = false;
   }
 }
 
@@ -2100,71 +2283,141 @@ function shortestPath(graph, start, end, allowStartBlocked = false) {
   return path;
 }
 
+function renderNodeLabels() {
+  // Remove existing label layer if any
+  let labelLayer = document.getElementById('map-labels-layer');
+  if (labelLayer) labelLayer.remove();
+
+  labelLayer = document.createElement('div');
+  labelLayer.id = 'map-labels-layer';
+  labelLayer.style.cssText = 'position:absolute;inset:0;z-index:13;pointer-events:none;';
+  document.getElementById('map-wrapper').appendChild(labelLayer);
+
+  // Only show labels for room nodes and meeting points
+  const SHOW_LABELS = new Set([
+    '1','2','3','4','5','6','7','8','9',
+    '10','11','12','13','14','15','16','17','18','19',
+    '20','21','22','23','24','25','26','27','28','29',
+    'm1','m2','m3','m4'
+  ]);
+
+  Object.entries(NODE_POSITIONS).forEach(([name, pos]) => {
+    if (!SHOW_LABELS.has(name)) return;
+
+    const isMeeting = name.startsWith('m');
+
+    const label = document.createElement('div');
+    label.style.cssText = `
+      position: absolute;
+      left: ${pos.x}%;
+      top: ${pos.y}%;
+      transform: translate(-50%, -160%);
+      font-size: ${isMeeting ? '9px' : '8px'};
+      font-weight: 800;
+      color: ${isMeeting ? '#22c55e' : 'rgba(255,255,255,0.75)'};
+      background: ${isMeeting ? 'rgba(34,197,94,0.15)' : 'rgba(0,0,0,0.55)'};
+      border: 1px solid ${isMeeting ? 'rgba(34,197,94,0.4)' : 'rgba(255,255,255,0.1)'};
+      padding: 1px 4px;
+      border-radius: 3px;
+      white-space: nowrap;
+      letter-spacing: 0.04em;
+      pointer-events: none;
+      text-transform: uppercase;
+    `;
+    label.textContent = isMeeting ? name.toUpperCase() : name;
+    labelLayer.appendChild(label);
+  });
+}
 
 // ── Draw a single SVG path line (used by animateMovement) ──
-function drawPathLine(pathId, points, color, glowFilterId) {
+function drawPathLine(pathId, points, color, glowFilterId, snap = false) {
   const svg = document.getElementById('path-layer');
   const pathData = buildPathData(points);
 
-  // Subtle glow background
-  const glowEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  glowEl.setAttribute('d', pathData);
-  glowEl.setAttribute('stroke', color);
-  glowEl.setAttribute('stroke-width', '1.2');
-  glowEl.setAttribute('fill', 'none');
-  glowEl.setAttribute('opacity', '0.18');
-  glowEl.setAttribute('stroke-linecap', 'square');
-  glowEl.setAttribute('stroke-linejoin', 'miter');
-  glowEl.setAttribute('filter', `url(#${glowFilterId})`);
-  glowEl.id = `path-glow-${pathId}`;
+  // Remove old
+  [`path-shadow-${pathId}`, `path-main-${pathId}`, `path-dash-${pathId}`,
+   `path-glow-${pathId}`, `path-${pathId}`].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+  });
 
-  // Main path — thin, crisp
-  const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  pathEl.setAttribute('d', pathData);
-  pathEl.setAttribute('stroke', color);
-  pathEl.setAttribute('stroke-width', '0.5');
-  pathEl.setAttribute('fill', 'none');
-  pathEl.setAttribute('opacity', '0.85');
-  pathEl.setAttribute('stroke-linecap', 'square');
-  pathEl.setAttribute('stroke-linejoin', 'miter');
-  pathEl.id = `path-${pathId}`;
+  // 1. THICK SHADOW / CASING (outermost - dark border like Uber)
+  const shadowEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  shadowEl.setAttribute('d', pathData);
+  shadowEl.setAttribute('stroke', 'rgba(0,0,0,0.6)');
+  shadowEl.setAttribute('stroke-width', '2.2');
+  shadowEl.setAttribute('fill', 'none');
+  shadowEl.setAttribute('stroke-linecap', 'round');
+  shadowEl.setAttribute('stroke-linejoin', 'round');
+  shadowEl.id = `path-shadow-${pathId}`;
+  svg.appendChild(shadowEl);
 
-  // Remove old paths with same id
-  const oldGlow = document.getElementById(`path-glow-${pathId}`);
-  const oldPath = document.getElementById(`path-${pathId}`);
-  if (oldGlow) oldGlow.remove();
-  if (oldPath) oldPath.remove();
+  // 2. THICK MAIN LINE (colored - like Uber's blue or Ola's green)
+  const mainEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  mainEl.setAttribute('d', pathData);
+  mainEl.setAttribute('stroke', color);
+  mainEl.setAttribute('stroke-width', '1.4');
+  mainEl.setAttribute('fill', 'none');
+  mainEl.setAttribute('opacity', '0.92');
+  mainEl.setAttribute('stroke-linecap', 'round');
+  mainEl.setAttribute('stroke-linejoin', 'round');
+  mainEl.id = `path-main-${pathId}`;
+  svg.appendChild(mainEl);
 
-  svg.appendChild(glowEl);
-  svg.appendChild(pathEl);
+  // 3. ANIMATED DASHES (moving dots like Uber's route animation)
+  const dashEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  dashEl.setAttribute('d', pathData);
+  dashEl.setAttribute('stroke', 'rgba(255,255,255,0.7)');
+  dashEl.setAttribute('stroke-width', '0.7');
+  dashEl.setAttribute('fill', 'none');
+  dashEl.setAttribute('stroke-linecap', 'round');
+  dashEl.setAttribute('stroke-dasharray', '2.7'); // short dash, long gap
+  dashEl.setAttribute('stroke-linejoin', 'round');
+  dashEl.id = `path-dash-${pathId}`;
+  // CSS animation for moving dashes
+  dashEl.style.animation = 'dash-flow 0.8s linear infinite';
+  svg.appendChild(dashEl);
 
-  // Animate draw-in
-  try {
-    const len = pathEl.getTotalLength();
-    const dur = Math.min(points.length * 0.25, 1.2);
-    pathEl.setAttribute('stroke-dasharray', len);
-    pathEl.setAttribute('stroke-dashoffset', len);
-    pathEl.style.transition = `stroke-dashoffset ${dur}s ease-out`;
-    glowEl.setAttribute('stroke-dasharray', len);
-    glowEl.setAttribute('stroke-dashoffset', len);
-    glowEl.style.transition = `stroke-dashoffset ${dur}s ease-out`;
-    void pathEl.getBoundingClientRect();
-    pathEl.setAttribute('stroke-dashoffset', '0');
-    glowEl.setAttribute('stroke-dashoffset', '0');
-  } catch(e) {}
+  // Draw-in animation for main line (like route appearing)
+  if (!snap) {
+    try {
+      const len = mainEl.getTotalLength();
+      const dur = Math.min(points.length * 0.18, 1.0);
+      [mainEl, shadowEl].forEach(el => {
+        el.setAttribute('stroke-dasharray', len);
+        el.setAttribute('stroke-dashoffset', len);
+        el.style.transition = `stroke-dashoffset ${dur}s cubic-bezier(0.4, 0, 0.2, 1)`;
+        void el.getBoundingClientRect();
+        el.setAttribute('stroke-dashoffset', '0');
+      });
+    } catch(e) {}
+  }
 
-  return { pathEl, glowEl };
+  // Cache for cross-tab
+  const _role = color === '#ff4d4d' ? 'rescue' : 'evac';
+  _pathCache[pathId] = { points, color, role: _role, ts: Date.now() };
+  try { localStorage.setItem('rr_activePaths', JSON.stringify(_pathCache)); } catch(e) {}
+
+  return { mainEl, shadowEl, dashEl };
 }
+ 
 
-// ── Fade out and remove a drawn path ──
 async function removePathLine(pathId) {
-  const p = document.getElementById(`path-${pathId}`);
-  const g = document.getElementById(`path-glow-${pathId}`);
-  if (p) { p.style.transition = 'opacity 0.4s'; p.style.opacity = '0'; }
-  if (g) { g.style.transition = 'opacity 0.4s'; g.style.opacity = '0'; }
+  const ids = [
+    `path-shadow-${pathId}`,
+    `path-main-${pathId}`,
+    `path-dash-${pathId}`,
+    `path-glow-${pathId}`,
+    `path-${pathId}`
+  ];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.style.transition = 'opacity 0.4s'; el.style.opacity = '0'; }
+  });
   await delay(400);
-  if (p) p.remove();
-  if (g) g.remove();
+  ids.forEach(id => { const el = document.getElementById(id); if (el) el.remove(); });
+  delete _pathCache[pathId];
+  try { localStorage.setItem('rr_activePaths', JSON.stringify(_pathCache)); } catch(e) {}
 }
 
 // ── Animate a SINGLE user moving along a path ──
@@ -2237,21 +2490,6 @@ async function animateMovementPair(staff, guest, path, finalNode, colorHint) {
 }
  
 
-async function evacuateSafeGuests() {
-  const meetingPoint = getFarthestNodeFromFire();
-  const safeGraph = getSafeGraph(activeFireNodes);
-
-  const safeGuests = allUsers.filter(u => 
-    u.type === 'guest' && u.status === 'safe'
-  );
-
-  for (let g of safeGuests) {
-    const path = shortestPath(safeGraph, g.node, meetingPoint);
-    if (path) await animateMovement(g, path);
-
-    logAction(`${g.name} evacuating to ${meetingPoint}`);
-  }
-}
 async function sendRescue(userId, node, name, btn) {
   btn.disabled = true;
   btn.textContent = 'Dispatching…';
@@ -2340,87 +2578,87 @@ async function sendRescue(userId, node, name, btn) {
     } catch(e) {}
   }
 
-async function warmupBackends() {
-  const logEl = document.getElementById('boot-log');
   const addLog = (msg, type) => {
+    const logEl = document.getElementById('boot-log');
+    if (!logEl) return;
     const line = document.createElement('div');
     line.className = 'boot-log-line' + (type ? ' boot-log-' + type : '');
     line.textContent = `> ${msg}`;
     logEl.appendChild(line);
     if (logEl.children.length > 5) logEl.removeChild(logEl.firstChild);
     
-    // Update main status text with a more professional msg
     const statusText = document.getElementById('mvp-status-text');
-    if (msg.includes('TRY')) {
-      const statuses = ['SYNCHRONIZING NODE NETWORK...', 'DECRYPTING SECURE LINK...', 'ESTABLISHING MISSION PROTOCOL...', 'VERIFYING SYSTEM INTEGRITY...'];
-      statusText.textContent = statuses[attempts % statuses.length];
-    } else {
-      statusText.textContent = msg;
-    }
+    if (statusText) statusText.textContent = msg;
   };
-
-  const skipBtn = document.createElement('button');
-  skipBtn.textContent = 'Skip & Proceed →';
-  skipBtn.style.cssText = 'margin-top:20px; padding:8px 16px; background:transparent; border:1px solid var(--border); color:var(--text-muted); cursor:pointer; font-size:11px; border-radius:4px; transition:all 0.2s;';
-  skipBtn.onmouseover = () => { skipBtn.style.color = '#fff'; skipBtn.style.borderColor = '#fff'; };
-  skipBtn.onclick = () => { nodeReady = pythonReady = true; hideLoader(); };
-  document.getElementById('boot-loader').appendChild(skipBtn);
 
   const hideLoader = () => {
-    addLog('SYSTEM LINK ESTABLISHED', 'success');
-    setTimeout(() => {
-      document.getElementById('boot-loader').classList.add('hidden');
-    }, 800);
+    const el = document.getElementById('boot-loader');
+    if (el) el.classList.add('hidden');
   };
 
-  addLog('SIGNALING COMMAND CENTER...');
+async function warmupBackends() {
+  // Silent background warmup
+  Promise.allSettled([
+    fetch(`${CONFIG.NODE_API}/ping`),
+    fetch(`${CONFIG.PYTHON_API}/ping`)
+  ]).then(() => addLog('SYSTEM LINK ESTABLISHED', 'success'));
   
-  let nodeReady = false;
-  let pythonReady = false;
-  let attempts = 0;
-  const maxAttempts = 3; // Ping up to 3 times, then proceed anyway
-
-  // Show the loader for at least 3 seconds for the premium feel
-  const minTimePromise = new Promise(r => setTimeout(r, 4000));
-
-  while (attempts < maxAttempts && (!nodeReady || !pythonReady)) {
-    attempts++;
-    addLog(`WAKING UP CLOUD NODES (TRY ${attempts})...`);
-    
-    try {
-      if (!nodeReady) {
-        const res = await fetch(`${CONFIG.NODE_API}/ping`).catch(() => null);
-        if (res && res.ok) {
-           const t = await res.text();
-           if (t === 'alive') { nodeReady = true; addLog('NODE BACKEND: ONLINE', 'success'); }
-        }
-      }
-      if (!pythonReady) {
-        const res = await fetch(`${CONFIG.PYTHON_API}/ping`).catch(() => null);
-        if (res && res.ok) {
-           const t = await res.text();
-           if (t === 'alive') { pythonReady = true; addLog('PYTHON BACKEND: ONLINE', 'success'); }
-        }
-      }
-    } catch(e) {}
-
-    if (nodeReady && pythonReady) break;
-    await new Promise(r => setTimeout(r, 1500));
-  }
-
-  await minTimePromise;
-  if (!nodeReady || !pythonReady) {
-    addLog('PROCEEDING WITH PARTIAL LINK...', 'warning');
-  }
   hideLoader();
 }
 
 (async function init() {
-    await warmupBackends();
-    await loadIncident();
-    loadSavedFloorPlan();  // ✅ ADD THIS LINE
+    // Restore persistent state
+    const savedFire = localStorage.getItem('rr_activeFireNodes');
+    if (savedFire) activeFireNodes = JSON.parse(savedFire);
+    
+    await loadIncident(); 
+    loadSavedFloorPlan();
+    
+    // Monitor simulation state
+    if (incidentData && incidentData.type === 'fire') {
+      try {
+        const fireRes = await apiFetch('/api/fire');
+        if (fireRes && fireRes.simulationRunning) {
+          simulationRunning = true;
+          activeFireNodes = fireRes.blockedNodes || [fireRes.node];
+          localStorage.setItem('rr_simulationRunning', 'true');
+          addLog('🔥 MISSION ACTIVE: MONITORING LIVE BACKEND...', 'warning');
+        }
+      } catch(e) { console.error('Monitor check failed:', e); }
+    }
+
     await refresh();
-    setInterval(refresh, 5000);
+    
+    // Auto-resume logic
+    if (simulationRunning) {
+      const mp = localStorage.getItem('rr_meetingPoint');
+      if (mp) {
+        // Redraw cached paths instantly
+        Object.entries(_pathCache).forEach(([id, data]) => {
+          const glowId = data.role === 'rescue' ? 'glow-red' : 'glow-green';
+          drawPathLine(id, data.points, data.color, glowId, true);
+        });
+
+        const fu = await apiFetch('/api/users');
+        const workRemaining = fu.some(u => u.type === 'guest' && (u.status === 'help' || (u.status !== 'help' && u.node !== mp)));
+        
+        if (workRemaining) {
+          addLog('⚡ RESUMING TACTICAL MISSION...', 'info');
+          startSimRefreshLoop();
+          runEvacuation(mp);
+          runRescue(mp);
+        } else {
+          addLog('✅ ALL REMAINING GUESTS ACCOUNTED FOR AT BASE', 'success');
+          localStorage.setItem('rr_simulationRunning', 'false');
+          simulationRunning = false;
+          _pathCache = {};
+          localStorage.removeItem('rr_activePaths');
+        }
+      }
+    }
+
+    setInterval(refresh, 2000); // Faster polling for "live" feel
+    warmupBackends(); 
 })();
   // Reset to default map (original floor-map.png and hardcoded nodes)
 function resetToDefaultMap() {

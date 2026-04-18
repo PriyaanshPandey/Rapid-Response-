@@ -25,6 +25,8 @@ router.post('/fire', async (req, res, next) => {
       node,
       blockedNodes: [node],
       status: 'active',
+      simulationRunning: true,
+      meetingPoint: req.body.meetingPoint || null
     });
 
     // 2. Log the event
@@ -58,6 +60,16 @@ router.post('/fire', async (req, res, next) => {
   }
 });
 
+// GET /api/fire — return active incident state
+router.get('/fire', async (req, res, next) => {
+  try {
+    const incident = await Incident.findOne({ status: 'active' }).lean();
+    res.json(incident || { status: 'none', simulationRunning: false });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /api/logs — return all logs sorted by timestamp ascending
 router.get('/logs', async (_req, res, next) => {
   try {
@@ -79,7 +91,13 @@ router.post('/fire-update', async (req, res, next) => {
 
     const incident = await Incident.findOneAndUpdate(
       { status: 'active' },
-      { blockedNodes },
+      { 
+        $set: {
+          blockedNodes: req.body.blockedNodes,
+          simulationRunning: req.body.simulationRunning,
+          meetingPoint: req.body.meetingPoint
+        }
+      },
       { new: true }
     );
 

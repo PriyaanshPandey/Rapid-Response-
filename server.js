@@ -95,6 +95,110 @@ app.use((err, _req, res, _next) => {
   res.status(status).json({ error: err.message || 'Internal server error' });
 });
 
+// ── Simulation Engine ─────────────────────────────────────────────────────────
+const User = require('./models/User');
+const Incident = require('./models/Incident');
+const Graph = require('./models/Graph');
+const Log = require('./models/Log');
+
+async function calculatePath(start, end, blockedNodes, adjacency) {
+  if (!start || !end || !adjacency) return null;
+  if (start === end) return [start];
+  const queue = [[start]];
+  const visited = new Set([start]);
+  const blocked = new Set(blockedNodes || []);
+
+  let iterations = 0;
+  const MAX_ITERATIONS = 1000;
+
+  while (queue.length > 0 && iterations < MAX_ITERATIONS) {
+    iterations++;
+    const path = queue.shift();
+    const node = path[path.length - 1];
+    const neighbors = adjacency[node] || [];
+
+    for (const neighbor of neighbors) {
+      if (!visited.has(neighbor) && !blocked.has(neighbor)) {
+        if (neighbor === end) return [...path, neighbor];
+        visited.add(neighbor);
+        queue.push([...path, neighbor]);
+      }
+    }
+  }
+  return null;
+}
+
+let isTicking = false;
+async function runSimulationTick() {
+  if (isTicking) return; // Prevent overlapping ticks
+  isTicking = true;
+  try {
+    const incident = await Incident.findOne({ status: 'active' }).lean();
+    if (!incident || !incident.simulationRunning) return;
+
+    const graph = await Graph.findOne({ name: 'current' }).lean();
+    if (!graph) return;
+
+    const users = await User.find({ 
+      status: { $in: ['moving', 'help', 'idle'] },
+      type: { $in: ['guest', 'staff'] }
+    });
+    if (users.length === 0) return;
+
+    const updates = users.map(async (user) => {
+      let target = null;
+      if (user.type === 'staff') {
+        if (user.role === 'rescue') {
+          // Rescue staff target: nearest assigned guest requiring rescue
+          const myGuest = await User.findOne({ assignedTo: user._id, status: 'help' });
+          if (myGuest) {
+            if (myGuest.node === user.node) {
+              // 🚨 PICKUP: Guest is now moving
+              myGuest.status = 'moving';
+              await myGuest.save();
+              await Log.create({ message: `✅ Rescue Leader picked up ${myGuest.name} at Node ${user.node}` });
+              target = incident.meetingPoint;
+            } else {
+              target = myGuest.node;
+            }
+          } else {
+            target = incident.meetingPoint;
+          }
+        } else {
+          // Evacuation staff target: assigned moving guest or meeting point
+          const myEvacGuest = await User.findOne({ assignedTo: user._id, status: 'moving' });
+          target = myEvacGuest ? incident.meetingPoint : incident.meetingPoint;
+        }
+      } else {
+        // Guest target: only move if NOT stuck waiting for help
+        if (user.status === 'help') return; 
+        target = incident.meetingPoint;
+      }
+
+      if (!target || user.node === target) {
+        if (user.type === 'guest' && user.node === incident.meetingPoint) {
+          user.status = 'safe';
+          await user.save();
+        }
+        return;
+      }
+
+      const path = await calculatePath(user.node, target, incident.blockedNodes, graph.nodeAdjacency);
+      if (path && path.length > 1) {
+        user.node = path[1]; 
+        user.status = 'moving';
+        await user.save();
+      }
+    });
+
+    await Promise.allSettled(updates);
+  } catch (err) {
+    console.error('[SIMULATION HEARTBEAT ERROR]', err);
+  } finally {
+    isTicking = false;
+  }
+}
+
 // ── Start ─────────────────────────────────────────────────────────────────────
 const startServer = async () => {
   try {
@@ -102,6 +206,9 @@ const startServer = async () => {
     const port = process.env.PORT || PORT;
     app.listen(port, () => {
       console.log(`[RAPID RESPONSE] Server running on port ${port}`);
+      
+      // Start Simulation Heartbeat (Tick every 2.5s)
+      setInterval(runSimulationTick, 2500);
     });
   } catch (err) {
     console.error('[RAPID RESPONSE STARTUP ERROR]', err);

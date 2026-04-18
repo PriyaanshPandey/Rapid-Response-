@@ -3,6 +3,7 @@
 const { Router } = require('express');
 const User = require('../models/User');
 const Log  = require('../models/Log');
+const Graph = require('../models/Graph');
 
 const router = Router();
 
@@ -80,6 +81,35 @@ router.post('/stop-simulation', async (req, res, next) => {
     await Log.deleteMany({});
     await User.updateMany({}, { $set: { status: 'idle' } });
     res.json({ success: true, message: 'Simulation stopped' });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── GRAPH PERSISTENCE ──
+
+router.post('/graph', async (req, res, next) => {
+  try {
+    const { nodePositions, nodeAdjacency, meetingPoints } = req.body;
+    if (!nodePositions || !nodeAdjacency) {
+      return res.status(400).json({ error: 'Missing graph data' });
+    }
+    await Graph.findOneAndUpdate(
+      { name: 'current' },
+      { nodePositions, nodeAdjacency, meetingPoints, updatedAt: new Date() },
+      { upsert: true, new: true }
+    );
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/graph', async (req, res, next) => {
+  try {
+    const graph = await Graph.findOne({ name: 'current' }).lean();
+    if (!graph) return res.status(404).json({ error: 'No graph found' });
+    res.json(graph);
   } catch (err) {
     next(err);
   }
