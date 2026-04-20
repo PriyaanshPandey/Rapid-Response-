@@ -1437,54 +1437,16 @@ function renderFireZones() {
     const pos = NODE_POSITIONS[node];
     if (!pos) return;
 
-    const wrapper = document.createElement('div');
-    wrapper.style.cssText = `
-      position: absolute;
-      left: ${pos.x}%;
-      top: ${pos.y}%;
-      transform: translate(-50%, -50%);
-      z-index: 12;
-      pointer-events: none;
-      width: 52px;
-      height: 52px;
-    `;
-
-    // Diagonal red hazard stripes background
-    wrapper.innerHTML = `
-      <div style="
-        width: 100%; height: 100%;
-        border-radius: 5px;
-        border: 1.5px solid #ff4d4d;
-        background: repeating-linear-gradient(
-          -45deg,
-          rgba(255, 50, 50, 0.55) 0px,
-          rgba(255, 50, 50, 0.55) 5px,
-          rgba(120, 0, 0, 0.3) 5px,
-          rgba(120, 0, 0, 0.3) 10px
-        );
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        animation: fire-breathe 1.5s ease-in-out infinite;
-        box-shadow: 0 0 10px rgba(255,77,77,0.6);
-      ">
-        <div style="
-          font-size: 9px;
-          font-weight: 900;
-          color: #fff;
-          text-align: center;
-          line-height: 1.2;
-          text-shadow: 0 0 4px #000;
-          background: rgba(0,0,0,0.45);
-          padding: 2px 3px;
-          border-radius: 3px;
-          letter-spacing: 0.04em;
-        ">🚫 RESTRICTED</div>
-      </div>
-    `;
-
-    layer.appendChild(wrapper);
+    const z = document.createElement('div');
+    z.className = 'fire-zone';
+    z.style.left = pos.x + '%';
+    z.style.top = pos.y + '%';
+    z.style.width = '60px';
+    z.style.height = '60px';
+    
+    // Add fire emoji as requested or purely structural if preferred
+    z.innerHTML = `<div style="display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size:24px; animation:blink 2s infinite">🔥</div>`;
+    layer.appendChild(z);
   });
 }
 
@@ -1780,16 +1742,16 @@ async function simulationLoop() {
     const guest = helpGuests[i];
 
     // 1. Staff → Guest
-    const path1 = shortestPath(safeGraph, staff.node, guest.node);
-    if (!path1) continue;
+    const path1 = shortestPath(GRAPH, staff.node, guest.node, true);
+    if (!path1 || path1.length < 2) continue;
 
-    await animateMovement(staff, path1);
+    await animateMovement(staff, path1, guest.node, 'red');
 
     logAction(`${staff.name} reached ${guest.name}`);
 
     // 2. Guest → Meeting Point
-    const path2 = shortestPath(safeGraph, guest.node, meetingPoint);
-    if (!path2) continue;
+    const path2 = shortestPath(safeGraph, guest.node, meetingPoint, true) || shortestPath(GRAPH, guest.node, meetingPoint, true);
+    if (!path2 || path2.length < 2) continue;
 
     await animateMovement(guest, path2);
     await animateMovement(staff, path2);
@@ -1812,10 +1774,16 @@ async function logAction(msg) {
       allUsers = users;
       renderStats(users);
       renderStuckGuests(users);
-      renderStaff(users);
-      renderGuestList(users);
+      
+      // Do not re-render lists if user is actively using a dropdown
+      const isDropdownActive = document.activeElement && document.activeElement.tagName === 'SELECT';
+      if (!isDropdownActive) {
+        renderStaff(users);
+        renderGuestList(users);
+      }
+
       renderMapDots(users);
-      renderNodeLabels(); // ← add this line
+      renderNodeLabels(); 
       renderLogs(logs);
       flashFooter();
       // Broadcast fire state to staff tabs
@@ -1823,6 +1791,15 @@ async function logAction(msg) {
         localStorage.setItem('rr_fireNodes', JSON.stringify(activeFireNodes));
         localStorage.setItem('rr_simRunning', simulationRunning ? '1' : '0');
       } catch(e) {}
+
+      // Auto-check for simulation complete safely in the UI polling tick
+      if (simulationRunning && activeFireNodes.length > 0) {
+        const mp = getFarthestNodeFromFire();
+        const guests = users.filter(u => u.type === 'guest');
+        if (guests.length > 0 && guests.every(u => u.node === mp)) {
+          await checkEvacuationComplete(mp);
+        }
+      }
     } catch(e) { console.error('[RAPID RESPONSE]', e.message); }
   }
 function getFarthestNodeFromFire() {
@@ -2168,34 +2145,69 @@ async function checkEvacuationComplete(meetingPoint) {
 
 function showEvacCompletePopup(meetingPoint, count) {
   // Remove existing popup if any
-  const existing = document.getElementById('evac-complete-popup');
+  const existing = document.getElementById('evac-complete-overlay');
   if (existing) existing.remove();
 
-  const popup = document.createElement('div');
-  popup.id = 'evac-complete-popup';
-  popup.style.cssText = `
-    position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
-    background:#0d1f0d; border:2px solid #22c55e;
-    border-radius:14px; padding:32px 40px; z-index:9999;
-    text-align:center; box-shadow:0 0 60px rgba(34,197,94,0.5);
-    animation:fade-in .3s ease-out;
+  const overlay = document.createElement('div');
+  overlay.id = 'evac-complete-overlay';
+  overlay.style.cssText = `
+    position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+    z-index: 9999; display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(8px); animation: fade-in 0.5s ease-out;
   `;
+
+  const popup = document.createElement('div');
+  popup.style.cssText = `
+    background: linear-gradient(145deg, #0d1f0d, #050a05);
+    border: 2px solid #22c55e;
+    border-radius: 20px; padding: 40px 60px;
+    text-align: center; 
+    box-shadow: 0 0 80px rgba(34,197,94,0.6), inset 0 0 20px rgba(34,197,94,0.2);
+    transform: scale(0.8);
+    animation: popup-bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    position: relative; overflow: hidden;
+  `;
+
+  // Inject keyframes dynamic styling
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes popup-bounce {
+      0% { transform: scale(0.5); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes float-icon {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    .evac-btn {
+      padding: 14px 40px; background: #22c55e; color: #000;
+      border: none; border-radius: 10px; font-size: 16px; font-weight: 900;
+      cursor: pointer; letter-spacing: 0.1em; text-transform: uppercase;
+      transition: all 0.2s; box-shadow: 0 4px 15px rgba(34,197,94,0.4);
+    }
+    .evac-btn:hover {
+      transform: translateY(-2px) scale(1.05);
+      background: #16a34a; box-shadow: 0 6px 20px rgba(34,197,94,0.6);
+    }
+  `;
+  
   popup.innerHTML = `
-    <div style="font-size:48px;margin-bottom:12px">✅</div>
-    <div style="font-size:22px;font-weight:900;color:#22c55e;letter-spacing:.04em;margin-bottom:8px">
-      EVACUATION COMPLETE
+    <div style="font-size:72px; margin-bottom:16px; animation: float-icon 3s ease-in-out infinite;">🎉</div>
+    <div style="font-size:32px; font-weight:900; color:#22c55e; letter-spacing:0.05em; margin-bottom:12px; text-shadow: 0 0 20px rgba(34,197,94,0.8);">
+      SIMULATION ENDED
     </div>
-    <div style="font-size:14px;color:#9ca3af;margin-bottom:20px">
-      All <strong style="color:#fff">${count} guests</strong> safely reached 
-      <strong style="color:#22c55e">Node ${meetingPoint}</strong>
+    <div style="font-size:18px; color:#d1d5db; margin-bottom:30px; font-weight: 500;">
+      All <strong style="color:#fff; font-size: 20px;">${count} guests</strong> have safely reached<br>
+      <strong style="color:#22c55e; font-size: 22px; display:inline-block; margin-top:8px; padding: 4px 12px; background:rgba(34,197,94,0.1); border-radius: 8px; border: 1px solid rgba(34,197,94,0.3);">Node ${meetingPoint}</strong>
     </div>
-    <button onclick="document.getElementById('evac-complete-popup').remove()"
-      style="padding:10px 28px;background:#22c55e;color:#000;border:none;border-radius:8px;
-             font-size:14px;font-weight:800;cursor:pointer;letter-spacing:.04em">
+    <button class="evac-btn" onclick="document.getElementById('evac-complete-overlay').remove()">
       DISMISS
     </button>
   `;
-  document.body.appendChild(popup);
+
+  overlay.appendChild(style);
+  overlay.appendChild(popup);
+  document.body.appendChild(overlay);
 }
 
   //djkstra 
@@ -2500,10 +2512,12 @@ async function sendRescue(userId, node, name, btn) {
 
     if (!staff || !guest) throw new Error('No staff/guest');
 
-    const safeGraph = getSafeGraph(activeFireNodes);
-    const path = shortestPath(safeGraph, staff.node, guest.node);
+    // Rescue staff can walk anywhere including through fire nodes, so use GRAPH
+    const path = shortestPath(GRAPH, staff.node, guest.node, true);
 
-    await animateMovement(staff, path);
+    if (path && path.length >= 2) {
+      await animateMovement(staff, path, guest.node, 'red');
+    }
 
     await apiPost('/api/user-status', {
       userId,
