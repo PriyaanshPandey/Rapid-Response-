@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Emergency Command Center</title>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
   <style>
     :root {
       --danger:     #ff4d4d;
@@ -415,6 +416,56 @@
   @keyframes path-draw {
     to { stroke-dashoffset: 0; }
   }
+
+  /* ======================== RESPONSIVE ======================== */
+  @media (max-width: 1200px) {
+    .col-left, .col-right { width: 280px; }
+    .header-stats { gap: 15px; }
+    .stat-card { min-width: 80px; }
+  }
+
+  @media (max-width: 992px) {
+    body { overflow-y: auto; height: auto; }
+    .main-content { 
+      flex-direction: column; 
+      height: auto; 
+      padding: 10px;
+      gap: 15px;
+    }
+    .col-left, .col-right { width: 100%; height: auto; order: 2; overflow-y: visible; }
+    .col-center { width: 100%; height: 600px; order: 1; }
+    
+    header { padding: 10px 15px; gap: 10px; }
+    .header-nav { display: none; }
+    .header-stats { order: 3; width: 100%; justify-content: space-around; gap: 5px; margin: 5px 0; }
+    .stat-card { min-width: 0; align-items: center; }
+  }
+
+  @media (max-width: 768px) {
+    .header-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .header-brand .brand-title { font-size: 15px; }
+    .stat-value { font-size: 14px; }
+    
+    #sim-panel, #upload-panel { width: 90%; padding: 20px; }
+    .mvp-logo { font-size: 20px; }
+    
+    .map-card { height: 400px; }
+    .col-center { height: 450px; }
+    
+    .card-header-row .card-title { font-size: 11px; }
+  }
+
+  @media (max-width: 480px) {
+    header { flex-direction: column; align-items: flex-start; height: auto; padding-bottom: 5px; }
+    .header-actions { width: 100%; justify-content: space-between; margin-top: 5px; }
+    .header-stats { grid-template-columns: 1fr 1fr; }
+    
+    #btn-sim-open { padding: 6px 12px; font-size: 10px; }
+    .btn-rescue { padding: 6px 10px; font-size: 10px; }
+    
+    .alert-txt { font-size: 12px; }
+    .guest-name { font-size: 12px; }
+  }
   </style>
   <script src="config.js"></script>
 </head>
@@ -439,7 +490,7 @@
 <div id="sim-overlay" onclick="if(event.target===this)closeSimPanel()">
   <div id="sim-panel">
     <button class="sim-close" onclick="closeSimPanel()">×</button>
-    <h2>🔥 Fire Simulation</h2>
+    <h2><span class="material-icons-round">local_fire_department</span> Fire Simulation</h2>
     <p class="sim-desc">Simulate a real fire event. All actions call your live backend API and update user statuses in MongoDB.</p>
 
     <div class="sim-section-label">1. Select Fire Origin Node</div>
@@ -454,19 +505,19 @@
 
       <!-- Step 1: Trigger fire -->
       <button class="btn-sim fire" id="btn-trigger-fire" onclick="simTriggerFire()">
-        🔥 Trigger Fire at Selected Node
+        Trigger Fire at Selected Node
       </button>
 
       <!-- Step 2: Spread fire -->
       <button class="btn-sim spread" id="btn-spread-fire" onclick="simSpreadFire()" disabled>
-        🌊 Spread Fire to Adjacent Nodes
+        Spread Fire to Adjacent Nodes
       </button>
 
       <hr class="sim-divider" style="margin:4px 0">
 
       <!-- Reset -->
       <button class="btn-sim reset" id="btn-reset-sim" onclick="simReset()">
-        ↺ Reset All Users to Idle
+        <span class="material-icons-round">refresh</span> Reset All Users to Idle
       </button>
     </div>
 
@@ -503,7 +554,7 @@
     </div>
     
     <button class="btn-sim" id="btn-process" onclick="processFloorPlan()" disabled style="padding:11px; background:linear-gradient(145deg, rgba(56,189,248,0.2) 0%, rgba(2,84,138,0.4) 100%); border:1px solid rgba(56,189,248,0.5); color:#7dd3fc; border-radius:8px; font-size:13px; font-weight:800; cursor:pointer;" onmouseover="this.style.background='linear-gradient(145deg, rgba(56,189,248,0.3) 0%, rgba(2,84,138,0.6) 100%)';this.style.boxShadow='0 0 15px rgba(56,189,248,0.4)'" onmouseout="this.style.background='linear-gradient(145deg, rgba(56,189,248,0.2) 0%, rgba(2,84,138,0.4) 100%)';this.style.boxShadow='none'">
-      🔄 Generate Navigation Graph
+      Generate Navigation Graph
     </button>
     
     <div class="sim-status" id="upload-status"></div>
@@ -520,10 +571,10 @@
 
   <div class="header-actions">
     <button id="btn-upload-open" onclick="openUploadPanel()" style="padding:8px 16px; background:linear-gradient(145deg, rgba(56,189,248,0.2) 0%, rgba(2,84,138,0.4) 100%); border:1px solid rgba(56,189,248,0.5); color:#7dd3fc; border-radius:8px; font-size:12px; font-weight:800; cursor:pointer;" onmouseover="this.style.background='linear-gradient(145deg, rgba(56,189,248,0.3) 0%, rgba(2,84,138,0.6) 100%)';this.style.boxShadow='0 0 15px rgba(56,189,248,0.4)'" onmouseout="this.style.background='linear-gradient(145deg, rgba(56,189,248,0.2) 0%, rgba(2,84,138,0.4) 100%)';this.style.boxShadow='none'">
-        🗺 Upload Map
+        Upload Map
     </button>
     <button id="btn-reset-map" onclick="resetToDefaultMap()" style="padding:8px 16px; background:linear-gradient(145deg, rgba(156,163,175,0.2) 0%, rgba(75,85,99,0.4) 100%); border:1px solid rgba(156,163,175,0.5); color:#9ca3af; border-radius:8px; font-size:12px; font-weight:800; cursor:pointer;" onmouseover="this.style.background='linear-gradient(145deg, rgba(156,163,175,0.3) 0%, rgba(75,85,99,0.6) 100%)';this.style.boxShadow='0 0 15px rgba(156,163,175,0.4)'" onmouseout="this.style.background='linear-gradient(145deg, rgba(156,163,175,0.2) 0%, rgba(75,85,99,0.4) 100%)';this.style.boxShadow='none'">
-        ↺ Reset
+        Reset
     </button>
   </div>
     <button id="btn-sim-open" onclick="openSimPanel()">
@@ -581,7 +632,7 @@
       </div>
       <div style="font-size:13px;font-weight:700;color:var(--text-white);margin-bottom:4px">Notify All Guests</div>
       <button class="btn-whatsapp" onclick="window.location.href='message.html'">
-        <span class="whatsapp-icon">✉</span>Open WhatsApp Messenger
+        <span class="material-icons-round">chat</span> Open Command Messenger
       </button>
     </div>
   </aside>
@@ -1999,14 +2050,14 @@ async function runEvacuation(meetingPoint) {
       if (!toMeeting || toMeeting.length < 2) {
         if (guest.node === meetingPoint) {
           await apiPost('/api/user-status', { userId: guest._id, status: 'safe', node: meetingPoint });
-          logAction(`✅ ${guest.name} already at meeting point`);
+          logAction(`SUCCESS: ${guest.name} already at meeting point`);
         } else {
-          logAction(`⚠️ ${guest.name} at ${guest.node} — no safe path to meeting point`);
+          logAction(`WARNING: ${guest.name} at ${guest.node} — no safe path to meeting point`);
         }
         continue;
       }
 
-      logAction(`🚶 Evac ${currentStaff.name} escorting ${guest.name} → Node ${meetingPoint}`);
+      logAction(`EN-ROUTE: Evac ${currentStaff.name} escorting ${guest.name} → Node ${meetingPoint}`);
       await apiPost('/api/user-status', { userId: guest._id, status: 'moving', assignedTo: currentStaff._id });
       await animateMovementPair(currentStaff, guest, toMeeting, meetingPoint, 'green');
 
@@ -2015,7 +2066,7 @@ async function runEvacuation(meetingPoint) {
       await apiPost('/api/user-status', { userId: guest._id, status: 'safe', node: meetingPoint, assignedTo: null });
       await apiPost('/api/user-status', { userId: currentStaff._id, status: 'idle', node: meetingPoint });
       currentStaff.node = meetingPoint;
-      logAction(`✅ ${guest.name} safely escorted to ${meetingPoint}`);
+      logAction(`SUCCESS: ${guest.name} safely escorted to ${meetingPoint}`);
     }
 
     // After all guests handled, make sure evac staff ends at meeting point
@@ -2054,7 +2105,7 @@ async function runRescue(meetingPoint) {
     return;
   }
 
-  logAction(`🔴 Starting rescue for ${helpGuests.length} guest(s)`);
+  logAction(`RESCUE: Starting rescue for ${helpGuests.length} guest(s)`);
 
   const staffQueues = rescueStaff.map(() => []);
   helpGuests.forEach((g, i) => staffQueues[i % rescueStaff.length].push(g));
@@ -2078,18 +2129,18 @@ async function runRescue(meetingPoint) {
         const toGuest = shortestPath(GRAPH, currentStaff.node, guest.node, true);
         if (!toGuest || toGuest.length < 2) {
           if (currentStaff.node === guest.node) {
-            logAction(`🚑 ${currentStaff.name} is already at ${guest.name}'s location`);
+            logAction(`RESCUE: ${currentStaff.name} is already at ${guest.name}'s location`);
           } else {
             logAction(`❌ ${currentStaff.name} cannot reach ${guest.name} at ${guest.node}`);
             continue;
           }
         } else {
-          logAction(`🚑 ${currentStaff.name} heading to rescue ${guest.name} at Node ${guest.node}`);
+          logAction(`RESCUE: ${currentStaff.name} heading to rescue ${guest.name} at Node ${guest.node}`);
           await animateMovement(currentStaff, toGuest, guest.node, 'red');
           currentStaff.node = guest.node;
         }
       } else {
-        logAction(`🚑 ${currentStaff.name} is already at ${guest.name}'s location`);
+        logAction(`RESCUE: ${currentStaff.name} is already at ${guest.name}'s location`);
       }
 
       if (!simulationRunning) break;
@@ -2103,14 +2154,14 @@ async function runRescue(meetingPoint) {
       if (!toMeeting || toMeeting.length < 2) {
         if (guest.node === meetingPoint) {
           await apiPost('/api/user-status', { userId: guest._id, status: 'safe', node: meetingPoint });
-          logAction(`✅ ${guest.name} already at meeting point`);
+          logAction(`SUCCESS: ${guest.name} already at meeting point`);
         } else {
           logAction(`⚠️ ${guest.name} at ${guest.node} is surrounded by fire — cannot evacuate`);
         }
         continue;
       }
 
-      logAction(`🚑 ${currentStaff.name} escorting ${guest.name} → Node ${meetingPoint}`);
+      logAction(`RESCUE: ${currentStaff.name} escorting ${guest.name} → Node ${meetingPoint}`);
       await animateMovementPair(currentStaff, guest, toMeeting, meetingPoint, 'red');
 
       if (!simulationRunning) break;

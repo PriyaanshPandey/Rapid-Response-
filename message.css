@@ -2190,11 +2190,22 @@ body {
     .header-right .btn-ai-verify span:last-child {
         display: none;
     }
+    .sidebar-alerts { width: 300px; }
 }
 
 @media (max-width: 1100px) {
-    .sidebar-right { display: none; }
-    #btn-toggle-alerts { display: flex; }
+    .sidebar-alerts { 
+        position: fixed;
+        right: -100%;
+        top: var(--header-height);
+        bottom: 0;
+        z-index: 210;
+        transition: right var(--transition-normal);
+        background: var(--bg-surface);
+        box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+    }
+    .sidebar-alerts.open { right: 0; display: flex !important; width: 320px; }
+    #btn-toggle-alerts { display: flex !important; }
 }
 
 @media (max-width: 768px) {
@@ -2205,8 +2216,9 @@ body {
 
     #emergency-header { padding: 0 12px; }
     .header-center { display: none; }
-    .header-left { min-width: auto; }
+    .header-left { min-width: auto; flex: 1; }
     #app-title { display: none; }
+    .header-badge { font-size: 0.65rem; padding: 2px 6px; }
 
     .sidebar {
         position: fixed;
@@ -2215,11 +2227,36 @@ body {
         bottom: 0;
         z-index: 200;
         transition: left var(--transition-normal);
+        background: var(--bg-deep);
+        box-shadow: 10px 0 30px rgba(0,0,0,0.5);
     }
 
     .sidebar.open { left: 0; }
-    .sidebar-toggle { display: flex !important; }
-    .message { max-width: 90%; }
+    #btn-toggle-sidebar { display: flex !important; }
+    
+    .message { max-width: 92%; }
+    .msg-bubble { padding: 10px 14px; }
+    
+    .chat-header { padding: 10px 15px; }
+    .chat-header h2 { font-size: 1rem; }
+    
+    .quick-actions { 
+        padding: 8px; 
+        gap: 6px; 
+        overflow-x: auto; 
+        justify-content: flex-start;
+        -webkit-overflow-scrolling: touch;
+    }
+    .quick-btn { 
+        padding: 8px 14px; 
+        font-size: 0.75rem; 
+        white-space: nowrap; 
+        flex: 0 0 auto;
+    }
+    
+    .message-input-container { padding: 10px; }
+    .input-row { padding: 4px 4px 4px 10px; }
+    .input-row textarea { font-size: 0.85rem; padding: 4px 0; }
 }
 
 @media (max-width: 480px) {
@@ -2227,4 +2264,11 @@ body {
     .header-right .btn-header-action,
     .header-right .btn-ai-verify { display: none; }
     .user-name { display: none; }
+    .user-badge { padding: 4px; }
+    
+    .msg-avatar { width: 32px; height: 32px; font-size: 0.7rem; }
+    .msg-sender { font-size: 0.7rem; }
+    .msg-text { font-size: 0.8rem; }
+    
+    .toast { min-width: 280px; width: calc(100vw - 40px); margin: 0 20px; }
 }

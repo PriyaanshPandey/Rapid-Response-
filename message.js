@@ -96,10 +96,10 @@
     function seedData() {
         // Build channels from floor plan
         state.channels = [
-            { id: 'all-emergency', name: 'All Emergency', type: 'emergency', icon: '🚨', members: 0, unread: 0, lastMessage: 'Monitoring all building guests...', lastTime: formatTime(Date.now()) },
-            { id: 'unsafe-guests', name: 'Unsafe Guests', type: 'emergency', icon: '🆘', members: 0, unread: 0, lastMessage: 'No guests in danger', lastTime: formatTime(Date.now()) },
-            { id: 'safe-guests', name: 'Safe Guests', type: 'emergency', icon: '✅', members: 0, unread: 0, lastMessage: 'Waiting for safety reports...', lastTime: formatTime(Date.now()) },
-            { id: 'admin-alerts', name: 'Admin Alerts & Requests', type: 'emergency', icon: '📋', members: 1, unread: 0, lastMessage: 'No pending requests', lastTime: formatTime(Date.now()) },
+            { id: 'all-emergency', name: 'All Emergency', type: 'emergency', icon: 'notifications', members: 0, unread: 0, lastMessage: 'Monitoring all building guests...', lastTime: formatTime(Date.now()) },
+            { id: 'unsafe-guests', name: 'Unsafe Guests', type: 'emergency', icon: 'priority_high', members: 0, unread: 0, lastMessage: 'No guests in danger', lastTime: formatTime(Date.now()) },
+            { id: 'safe-guests', name: 'Safe Guests', type: 'emergency', icon: 'check_circle', members: 0, unread: 0, lastMessage: 'Waiting for safety reports...', lastTime: formatTime(Date.now()) },
+            { id: 'admin-alerts', name: 'Admin Alerts & Requests', type: 'emergency', icon: 'assignment', members: 1, unread: 0, lastMessage: 'No pending requests', lastTime: formatTime(Date.now()) },
         ];
 
 
@@ -132,7 +132,7 @@
             { id: 'sg1', type: 'system', text: '✅ Confirmed safe guests will be listed here.', time: now, sender: null }
         ];
         state.messages['unsafe-guests'] = [
-            { id: 'ug1', type: 'system', text: '🆘 Guests requiring immediate assistance will appear here.', time: now, sender: null }
+            { id: 'ug1', type: 'system', text: 'Guests requiring immediate assistance will appear here.', time: now, sender: null }
         ];
 
         // Initialize empty messages for all channels
@@ -376,7 +376,7 @@ DOM.pinnedAlertText = document.getElementById('pinned-alert-text');
             li.className = `channel-item${ch.id === state.currentChannelId ? ' active' : ''}${ch.hasAlert ? ' has-alert' : ''}`;
             li.dataset.channelId = ch.id;
             li.innerHTML = `
-                <div class="channel-icon">${ch.icon}</div>
+                <div class="channel-icon"><span class="material-icons-round">${ch.icon.length > 2 ? ch.icon : 'chat'}</span></div>
                 <div class="channel-info">
                     <div class="channel-name">
                         <span class="ch-title">${sanitize(ch.name)}</span>
@@ -453,7 +453,7 @@ DOM.pinnedAlertText = document.getElementById('pinned-alert-text');
             }
 
             card.innerHTML = `
-                <div class="mission-icon-wrap">${ch.icon}</div>
+                <div class="mission-icon-wrap"><span class="material-icons-round">${ch.icon.length > 2 ? ch.icon : 'chat'}</span></div>
                 <h1>${sanitize(ch.name)}</h1>
                 <p>${description}</p>
                 <div class="mission-actions">
@@ -667,13 +667,13 @@ DOM.pinnedAlertText = document.getElementById('pinned-alert-text');
             rooms.forEach(r => {
                 const tile = document.createElement('div');
                 tile.className = `room-tile ${r.status}`;
-                const statusIcon = r.status === 'help' ? '🆘' : (r.status === 'safe' ? '✅' : '🚪');
+                const statusIcon = r.status === 'help' ? 'priority_high' : (r.status === 'safe' ? 'check_circle' : 'meeting_room');
                 const occupantName = r.lastUpdate.includes(':') ? r.lastUpdate.split(':')[0] : '';
 
                 tile.innerHTML = `
                     <span class="room-num">${r.num}</span>
                     ${occupantName ? `<span class="room-occupant-name">${occupantName}</span>` : ''}
-                    <span class="room-status-icon">${statusIcon}</span>
+                    <span class="room-status-icon"><span class="material-icons-round">${r.status === 'help' ? 'priority_high' : (r.status === 'safe' ? 'check_circle' : 'meeting_room')}</span></span>
                 `;
                 tile.title = `Room ${r.num} — ${r.status.toUpperCase()}\n${r.lastUpdate}`;
                 tile.addEventListener('click', () => selectChannel(`room-${r.num}`));
@@ -888,27 +888,27 @@ DOM.pinnedAlertText = document.getElementById('pinned-alert-text');
 
         switch (action) {
             case 'sos':
-                text = `🆘 EMERGENCY: I need immediate help! Room ${state.assignedRoom}.`;
+                text = `EMERGENCY: I need immediate help! Room ${state.assignedRoom}.`;
                 severity = 'critical';
-                reqType = '🆘 SOS — HELP NEEDED';
+                reqType = 'SOS — HELP NEEDED';
                 reqIcon = 'emergency';
                 break;
             case 'safe':
-                text = `✅ I'm safe in Room ${state.assignedRoom}. No injuries.`;
+                text = `I'm safe in Room ${state.assignedRoom}. No injuries.`;
                 severity = 'info';
-                reqType = '✅ SAFE REPORT';
+                reqType = 'SAFE REPORT';
                 reqIcon = 'check_circle';
                 break;
             case 'medical':
-                text = `🏥 Medical assistance needed in Room ${state.assignedRoom}. Please send help.`;
+                text = `Medical assistance needed in Room ${state.assignedRoom}. Please send help.`;
                 severity = 'warning';
-                reqType = '🏥 MEDICAL REQUEST';
+                reqType = 'MEDICAL REQUEST';
                 reqIcon = 'local_hospital';
                 break;
             case 'report':
-                text = `ℹ️ Reporting from Room ${state.assignedRoom}: ` + (DOM.messageInput.value.trim() || 'Situation update from room.');
+                text = `Situation Report from Room ${state.assignedRoom}: ` + (DOM.messageInput.value.trim() || 'Situation update from room.');
                 severity = 'info';
-                reqType = 'ℹ️ SITUATION REPORT';
+                reqType = 'SITUATION REPORT';
                 reqIcon = 'info';
                 break;
         }
@@ -961,15 +961,14 @@ DOM.pinnedAlertText = document.getElementById('pinned-alert-text');
     // ======================== BROADCAST ========================
     function broadcastAlert(severity, incidentType, floorKey, message) {
         const floorName = floorKey === 'all' ? 'All Floors' : (FLOOR_PLAN[floorKey]?.name || `Floor ${floorKey}`);
-        const emoji = getIncidentEmoji(incidentType);
-        const fullText = `🚨 EMERGENCY BROADCAST: ${emoji} ${incidentType.toUpperCase()} — ${floorName}. ${message}`;
+        const fullText = `EMERGENCY BROADCAST: ${incidentType.toUpperCase()} — ${floorName}. ${message}`;
 
         // Activate incident
         state.incidentActive = true;
         state.incidentStartTime = Date.now();
         state.incidentType = incidentType;
         state.incidentFloor = floorKey;
-        DOM.incidentTypeDisplay.textContent = `${emoji} ${incidentType.charAt(0).toUpperCase() + incidentType.slice(1)} — ${floorName}`;
+        DOM.incidentTypeDisplay.textContent = `${incidentType.charAt(0).toUpperCase() + incidentType.slice(1)} — ${floorName}`;
         updateIncidentUI();
 
         // Trigger real incident on backend if it's fire
@@ -979,7 +978,7 @@ DOM.pinnedAlertText = document.getElementById('pinned-alert-text');
 
         // Show pinned alert
         DOM.pinnedAlert.style.display = 'flex';
-        DOM.pinnedAlertText.textContent = `🔴 ${severity.toUpperCase()} ALERT: ${incidentType.charAt(0).toUpperCase() + incidentType.slice(1)} detected on ${floorName} — All personnel respond immediately`;
+        DOM.pinnedAlertText.textContent = `CRITICAL ALERT: ${incidentType.charAt(0).toUpperCase() + incidentType.slice(1)} detected on ${floorName} — All personnel respond immediately`;
 
         const broadcastMsg = {
             id: 'bc-' + Date.now(),
@@ -1149,9 +1148,9 @@ Make instructions specific to ${incidentType} in a hospital setting. Keep each i
 
     function getFallbackInstructions(incidentType, floorName) {
         const instructions = {
-            fire: `🚨 EMERGENCY: FIRE DETECTED on ${floorName}
+            fire: `EMERGENCY: FIRE DETECTED on ${floorName}
 
-✅ WHAT TO DO:
+WHAT TO DO:
 1. Stay low to avoid smoke inhalation — crawl if necessary
 2. Cover your nose and mouth with a wet cloth
 3. Move toward the nearest emergency exit (use stairs ONLY)
@@ -1159,23 +1158,23 @@ Make instructions specific to ${incidentType} in a hospital setting. Keep each i
 5. Alert others as you evacuate — check on nearby rooms
 6. Proceed to the assembly point (Conference Hall, Ground Floor)
 
-❌ WHAT NOT TO DO:
+WHAT NOT TO DO:
 1. DO NOT use elevators under any circumstances
 2. DO NOT open windows if smoke is outside
 3. DO NOT go back for personal belongings
 4. DO NOT panic — stay calm and follow instructions
 5. DO NOT block emergency exits or stairways
 
-📞 EMERGENCY CONTACTS:
+EMERGENCY CONTACTS:
 • Admin Control Room: Extension 100
 • Fire Department: 101
 • Medical Emergency: 102
 
 Stay calm. Help is on the way. Rescue team has been dispatched.`,
 
-            earthquake: `🚨 EMERGENCY: EARTHQUAKE DETECTED on ${floorName}
+            earthquake: `EMERGENCY: EARTHQUAKE DETECTED on ${floorName}
 
-✅ WHAT TO DO:
+WHAT TO DO:
 1. DROP, COVER, and HOLD ON immediately
 2. Get under a sturdy desk or table
 3. Stay away from windows, mirrors, and heavy furniture
@@ -1183,55 +1182,55 @@ Stay calm. Help is on the way. Rescue team has been dispatched.`,
 5. After shaking stops, evacuate using stairs only
 6. Move to open area away from buildings
 
-❌ WHAT NOT TO DO:
+WHAT NOT TO DO:
 1. DO NOT run outside during shaking
 2. DO NOT use elevators
 3. DO NOT stand near windows or glass partitions
 4. DO NOT light matches or candles (gas leak risk)
 
-📞 EMERGENCY CONTACTS:
+EMERGENCY CONTACTS:
 • Admin Control Room: Extension 100
 • Emergency Services: 112
 
 Stay calm. Aftershocks may follow.`,
 
-            gas_leak: `🚨 EMERGENCY: GAS LEAK DETECTED on ${floorName}
+            gas_leak: `EMERGENCY: GAS LEAK DETECTED on ${floorName}
 
-✅ WHAT TO DO:
+WHAT TO DO:
 1. Leave the area immediately — move upwind
 2. Cover your nose and mouth with a wet cloth
 3. Open windows as you leave (if safe to do so)
 4. Move to the assembly point outdoors
 5. Report any unusual smells to admin immediately
 
-❌ WHAT NOT TO DO:
+WHAT NOT TO DO:
 1. DO NOT turn on/off any electrical switches
 2. DO NOT use your phone near the leak area
 3. DO NOT light any flames or matches
 4. DO NOT use elevators
 
-📞 EMERGENCY CONTACTS:
+EMERGENCY CONTACTS:
 • Admin Control Room: Extension 100
 • Gas Emergency: 1906
 
 Evacuate calmly. Ventilation team is responding.`,
 
-            flood: `🚨 EMERGENCY: FLOOD ALERT on ${floorName}
+            flood: `EMERGENCY: FLOOD ALERT on ${floorName}
 
-✅ WHAT TO DO:
+WHAT TO DO:
 1. Move to higher floors immediately
 2. Unplug all electrical equipment
 3. Avoid walking through moving water
 4. Help immobile patients to safety first
 5. Follow staff instructions for evacuation routes
 
-❌ WHAT NOT TO DO:
+WHAT NOT TO DO:
 1. DO NOT touch electrical equipment in water
 2. DO NOT use elevators
 3. DO NOT walk through flooded areas alone
 4. DO NOT ignore rising water levels
 
-📞 EMERGENCY CONTACTS:
+EMERGENCY CONTACTS:
 • Admin Control Room: Extension 100
 • Flood Control: 1070
 
@@ -1311,7 +1310,7 @@ Respond in this exact JSON format:
             document.getElementById('btn-start-detect').disabled = true;
             document.getElementById('btn-stop-detect').disabled = false;
 
-            addDetectionLog('✅ Camera activated. Starting fire detection...', 'info');
+            addDetectionLog('Camera activated. Starting fire detection...', 'info');
             state.detectionActive = true;
 
             // Start detection loop
@@ -1903,7 +1902,7 @@ Respond in this exact JSON format:
         hideModal('new-channel-modal');
         showToast('Channel Created', `"${name}" is now available.`, 'success');
         document.getElementById('new-channel-name').value = '';
-        document.getElementById('new-channel-icon').value = '🏢';
+        document.getElementById('new-channel-icon').value = 'room';
         selectChannel(newChannel.id);
     }
 
@@ -2022,7 +2021,7 @@ Respond in this exact JSON format:
                     );
                     if (guestInRoom) {
                         ch.members = 1;
-                        ch.lastMessage = `👤 ${guestInRoom.name}: ${guestInRoom.status.toUpperCase()}`;
+                        ch.lastMessage = `OCCUPANT: ${guestInRoom.name}: ${guestInRoom.status.toUpperCase()}`;
                         ch.lastTime = formatTime(guestInRoom.updatedAt || Date.now());
                         if (guestInRoom.status === 'help') ch.hasAlert = true;
                     } else {
@@ -2040,7 +2039,7 @@ Respond in this exact JSON format:
             if (unsafeCh) {
                 unsafeCh.members = unsafe.length;
                 unsafeCh.lastMessage = unsafe.length > 0
-                    ? `🆘 ${unsafe.map(g => g.name).slice(0, 3).join(', ')}${unsafe.length > 3 ? '...' : ''}`
+                    ? `NEED HELP: ${unsafe.map(g => g.name).slice(0, 3).join(', ')}${unsafe.length > 3 ? '...' : ''}`
                     : 'No guests currently in danger';
                 unsafeCh.hasAlert = unsafe.length > 0;
                 unsafeCh.lastTime = formatTime(Date.now());
@@ -2050,7 +2049,7 @@ Respond in this exact JSON format:
             if (safeCh) {
                 safeCh.members = safe.length;
                 safeCh.lastMessage = safe.length > 0
-                    ? `✅ ${safe.map(g => g.name).slice(0, 3).join(', ')}${safe.length > 3 ? '...' : ''}`
+                    ? `SAFE: ${safe.map(g => g.name).slice(0, 3).join(', ')}${safe.length > 3 ? '...' : ''}`
                     : 'No safe reports received yet';
                 safeCh.lastTime = formatTime(Date.now());
             }
