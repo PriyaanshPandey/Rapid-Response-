@@ -57,6 +57,7 @@
     };
 
     // ======================== STATE ========================
+    let allUsers = [];
     const state = {
         currentUser: { name: 'Admin', initials: 'AD', role: 'Administrator', id: 'admin-001' },
         currentRole: 'admin', // 'admin' or 'guest'
@@ -228,17 +229,46 @@
         DOM.detectionStatusText = document.getElementById('detection-status-text');
         DOM.logEntries = document.getElementById('log-entries');
         DOM.btnResetIncident = document.getElementById('btn-reset-incident');
+        DOM.activeIncidentCard = document.getElementById('active-incident-card');
+        DOM.charCount = document.getElementById('char-count');
+        // Add these missing DOM references
+DOM.btnAttach = document.getElementById('btn-attach');
+DOM.btnSettings = document.getElementById('btn-settings');
+DOM.btnNewChannel = document.getElementById('btn-new-channel');
+DOM.btnClearChat = document.getElementById('btn-clear-chat');
+DOM.btnClearAlerts = document.getElementById('btn-clear-alerts');
+DOM.btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
+DOM.btnToggleAlerts = document.getElementById('btn-toggle-alerts');
+DOM.btnClosePinned = document.getElementById('btn-close-pinned');
+DOM.sidebarChannels = document.getElementById('sidebar-channels');
+DOM.sidebarAlerts = document.getElementById('sidebar-alerts');
+DOM.roleDropdown = document.getElementById('role-dropdown');
+DOM.userBadge = document.getElementById('user-badge');
+DOM.userAvatarText = document.getElementById('user-avatar-text');
+DOM.userNameText = document.getElementById('user-name-text');
+DOM.charCount = document.getElementById('char-count');
+DOM.pinnedAlert = document.getElementById('pinned-alert');
+DOM.pinnedAlertText = document.getElementById('pinned-alert-text');
+
     }
 
     // ======================== CONFIRM DIALOG ========================
-    function showConfirm(title, message, icon, callback) {
-        document.getElementById('confirm-title').textContent = title;
-        document.getElementById('confirm-message').textContent = message;
-        document.getElementById('confirm-icon').textContent = icon || 'warning';
+   function showConfirm(title, message, icon, callback) {
+    document.getElementById('confirm-title').textContent = title;
+    document.getElementById('confirm-message').textContent = message;
+    document.getElementById('confirm-icon').textContent = icon || 'warning';
+    
+    // If callback provided, use old style. If not, return a Promise.
+    if (callback) {
         state._confirmCallback = callback;
         showModal('confirm-modal');
+        return;
     }
-
+    return new Promise(resolve => {
+        state._confirmCallback = () => resolve(true);
+        showModal('confirm-modal');
+    });
+}
     // ======================== ROLE SWITCHING ========================
     function switchRole(role) {
         if (role === 'guest') {
@@ -368,15 +398,69 @@
         const msgs = state.messages[state.currentChannelId] || [];
         DOM.messagesScroll.innerHTML = '';
 
-        if (msgs.length === 0) {
-            const empty = document.createElement('div');
-            empty.className = 'empty-state';
-            empty.innerHTML = `
-                <span class="material-icons-round">forum</span>
-                <h3>No messages yet</h3>
-                <p>Messages in this channel will appear here.</p>
+        // Add a "ROSTER" section for safe/unsafe groups
+        if (state.currentChannelId === 'safe-guests' || state.currentChannelId === 'unsafe-guests') {
+    const isSafe = state.currentChannelId === 'safe-guests';
+    const relevantGuests = allUsers.filter(u =>
+        u.type === 'guest' &&
+        (isSafe
+            ? u.status === 'safe'
+            : (u.status === 'help' || u.status === 'moving'))
+    );
+            
+            if (relevantGuests.length > 0) {
+                const roster = document.createElement('div');
+                roster.className = 'mission-start-card';
+                roster.style.padding = '20px';
+                roster.style.marginBottom = '10px';
+                roster.innerHTML = `
+                <div style="font-size:0.8rem; font-weight:800; color:var(--text-secondary); text-transform:uppercase; margin-bottom:12px; letter-spacing:1px;">
+                    Live ${isSafe ? 'Safe' : 'Critical'} Guest Roster — ${relevantGuests.length} ${isSafe ? 'safe' : 'need help'}
+                </div>
+                <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap:8px; width:100%;">
+                    ${relevantGuests.map(g => `
+                        <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-subtle); border-radius:8px; padding:10px; display:flex; align-items:center; gap:8px;">
+                            <div style="width:28px; height:28px; border-radius:50%; background:${isSafe ? '#22c55e' : '#ef4444'}; display:flex; align-items:center; justify-content:center; color:#fff; font-size:11px; font-weight:800; flex-shrink:0;">
+                                ${g.name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase()}
+                            </div>
+                            <div style="text-align:left; min-width:0;">
+                                <div style="font-size:0.75rem; font-weight:700; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100px;">${sanitize(g.name)}</div>
+                                <div style="font-size:0.65rem; color:var(--text-muted);">📍 Node ${sanitize(g.node || '?')}</div>
+                                <div style="font-size:0.6rem; color:${isSafe ? '#22c55e' : '#ef4444'}; font-weight:700; text-transform:uppercase;">${g.status}</div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
             `;
-            DOM.messagesScroll.appendChild(empty);
+                DOM.messagesScroll.appendChild(roster);
+            }
+        }
+
+        if (msgs.length === 0) {
+            const ch = state.channels.find(c => c.id === state.currentChannelId);
+            const card = document.createElement('div');
+            card.className = 'mission-start-card';
+            
+            let description = 'This channel is secure and ready for emergency communication.';
+            let chips = ['Request Status', 'Send Broadcast'];
+            
+            if (ch.type === 'room') {
+                description = `Direct communication channel for ${ch.name}. Coordinate with occupants and rescue teams assigned to this node.`;
+                chips = ['Verify Safe', 'Mark Help', 'Dispatch Team'];
+            } else if (ch.id === 'all-emergency') {
+                description = 'Global broadcast and system-wide alerts. Every user on the network receives updates from this channel.';
+                chips = ['System Summary', 'Crisis Protocols'];
+            }
+
+            card.innerHTML = `
+                <div class="mission-icon-wrap">${ch.icon}</div>
+                <h1>${sanitize(ch.name)}</h1>
+                <p>${description}</p>
+                <div class="mission-actions">
+                    ${chips.map(c => `<button class="quick-chip"><span class="material-icons-round" style="font-size:14px">bolt</span> ${c}</button>`).join('')}
+                </div>
+            `;
+            DOM.messagesScroll.appendChild(card);
             scrollToBottom();
             updateStats();
             return;
@@ -1447,8 +1531,9 @@ Respond in this exact JSON format:
         Object.values(state.rooms).forEach(rooms => {
             rooms.forEach(r => {
                 totalRooms++;
-                // Status mapping: help/moving count as alerted
-                if (r.status === 'help' || r.status === 'moving' || r.status === 'alert') alertedRooms++;
+                // Status mapping: help/moving/alert (fire) count as alerted
+                const fireAtNode = state.incidentActive && state.fireNodes && state.fireNodes.includes(r.num);
+                if (r.status === 'help' || r.status === 'moving' || r.status === 'alert' || fireAtNode) alertedRooms++;
             });
         });
         const statText = `${alertedRooms} / ${totalRooms}`;
@@ -1521,206 +1606,168 @@ Respond in this exact JSON format:
 
     // ======================== EVENT HANDLERS ========================
     function bindEvents() {
-        // Send message
-        DOM.btnSend.addEventListener('click', handleSend);
+    // Send message - these exist
+    if (DOM.btnSend) DOM.btnSend.addEventListener('click', handleSend);
+    if (DOM.messageInput) {
         DOM.messageInput.addEventListener('keydown', e => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 handleSend();
             }
         });
-
-        // Character count, auto-resize, send button state
         DOM.messageInput.addEventListener('input', () => {
-            DOM.charCount.textContent = `${DOM.messageInput.value.length} / 2000`;
+            if (DOM.charCount) DOM.charCount.textContent = `${DOM.messageInput.value.length} / 2000`;
             DOM.messageInput.style.height = 'auto';
             DOM.messageInput.style.height = Math.min(DOM.messageInput.scrollHeight, 120) + 'px';
             updateSendButton();
         });
+    }
 
-        // Severity selector
-        document.querySelectorAll('.severity-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.severity-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                state.currentSeverity = btn.dataset.severity;
-                const labels = { normal: 'Normal Message', info: 'ℹ️ Info', warning: '⚠️ Warning', critical: '🔴 Critical', evacuation: '🚨 Evacuation' };
+    // Severity buttons (if they exist)
+    document.querySelectorAll('.severity-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.severity-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            state.currentSeverity = btn.dataset.severity;
+            if (DOM.currentSeverityLabel) {
+                const labels = { normal: 'Normal Message', info: 'ℹ️ Info', warning: '⚠️ Warning', critical: '🔴 Critical' };
                 DOM.currentSeverityLabel.textContent = labels[state.currentSeverity] || 'Normal';
-            });
-        });
-
-        // Broadcast modal
-        DOM.btnBroadcast.addEventListener('click', () => showModal('broadcast-modal'));
-        document.getElementById('btn-send-broadcast').addEventListener('click', handleBroadcast);
-
-        const handleReset = async () => {
-            const confirmed = await showConfirm('Reset System', 'This will stop all simulations and clear fire incidents. Proceed?', 'warning');
-            if (confirmed) {
-                const res = await apiPost('/api/stop-simulation', {});
-                if (res) {
-                    showToast('System Reset', 'All incidents cleared.', 'success');
-                    await syncWithBackend();
-                }
             }
-        };
-
-        if (DOM.btnResetIncident) DOM.btnResetIncident.addEventListener('click', handleReset);
-        if (DOM.sidebarBtnResetIncident) DOM.sidebarBtnResetIncident.addEventListener('click', handleReset);
-
-
-        // Settings modal
-        document.getElementById('btn-settings').addEventListener('click', () => {
-            DOM.roleDropdown.classList.remove('open');
-            // Load current settings into form
-            const apiKeyInput = document.getElementById('settings-api-key');
-            if (apiKeyInput && state.geminiApiKey) {
-                apiKeyInput.value = state.geminiApiKey;
-            }
-            document.getElementById('setting-sound').checked = state.settings.soundEnabled;
-            document.getElementById('setting-timestamps').checked = state.settings.showTimestamps;
-            document.getElementById('setting-avatars').checked = state.settings.showAvatars;
-            showModal('settings-modal');
         });
+    });
 
-        document.getElementById('btn-save-settings').addEventListener('click', () => {
-            const apiKey = document.getElementById('settings-api-key')?.value;
-            if (apiKey) state.geminiApiKey = apiKey.trim();
-            state.settings.soundEnabled = document.getElementById('setting-sound').checked;
-            state.settings.showTimestamps = document.getElementById('setting-timestamps').checked;
-            state.settings.showAvatars = document.getElementById('setting-avatars').checked;
-            hideModal('settings-modal');
-            renderMessages(); // Re-render with new settings
-            showToast('Settings Saved', 'Your preferences have been updated.', 'success');
-        });
+    // Broadcast modal
+    if (DOM.btnBroadcast) DOM.btnBroadcast.addEventListener('click', () => showModal('broadcast-modal'));
+    const sendBroadcastBtn = document.getElementById('btn-send-broadcast');
+    if (sendBroadcastBtn) sendBroadcastBtn.addEventListener('click', handleBroadcast);
 
-        // API key visibility toggle
-        document.getElementById('btn-toggle-key-visibility').addEventListener('click', () => {
-            const input = document.getElementById('settings-api-key');
-            const icon = document.getElementById('btn-toggle-key-visibility').querySelector('.material-icons-round');
-            input.type = input.type === 'password' ? 'text' : 'password';
-            icon.textContent = input.type === 'password' ? 'visibility' : 'visibility_off';
-        });
+    // Reset buttons
+    if (DOM.btnResetIncident) DOM.btnResetIncident.addEventListener('click', resetIncident);
+    if (DOM.sidebarBtnResetIncident) DOM.sidebarBtnResetIncident.addEventListener('click', resetIncident);
 
-        // Webcam modal
-        DOM.btnWebcam.addEventListener('click', () => {
-            state._fireAlertTriggered = false;
-            showModal('webcam-modal');
-        });
-        document.getElementById('btn-start-detect').addEventListener('click', startWebcamDetection);
-        document.getElementById('btn-stop-detect').addEventListener('click', stopWebcamDetection);
+    // Settings
+    if (DOM.btnSettings) DOM.btnSettings.addEventListener('click', () => {
+        if (DOM.roleDropdown) DOM.roleDropdown.classList.remove('open');
+        showModal('settings-modal');
+    });
 
-        // Role switcher
+    const saveSettingsBtn = document.getElementById('btn-save-settings');
+    if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', () => {
+        const apiKey = document.getElementById('settings-api-key')?.value;
+        if (apiKey) state.geminiApiKey = apiKey.trim();
+        if (document.getElementById('setting-sound')) state.settings.soundEnabled = document.getElementById('setting-sound').checked;
+        if (document.getElementById('setting-timestamps')) state.settings.showTimestamps = document.getElementById('setting-timestamps').checked;
+        if (document.getElementById('setting-avatars')) state.settings.showAvatars = document.getElementById('setting-avatars').checked;
+        hideModal('settings-modal');
+        renderMessages();
+        showToast('Settings Saved', 'Preferences updated.', 'success');
+    });
+
+    // Role switcher
+    if (DOM.userBadge) {
         DOM.userBadge.addEventListener('click', (e) => {
             e.stopPropagation();
-            DOM.roleDropdown.classList.toggle('open');
-        });
-
-        document.getElementById('role-opt-admin').addEventListener('click', () => {
-            DOM.roleDropdown.classList.remove('open');
-            switchRole('admin');
-        });
-
-        document.getElementById('role-opt-guest').addEventListener('click', () => {
-            DOM.roleDropdown.classList.remove('open');
-            switchRole('guest');
-        });
-
-        // Close dropdown on outside click
-        document.addEventListener('click', () => {
-            DOM.roleDropdown.classList.remove('open');
-        });
-
-        // Guest modal
-        document.getElementById('guest-floor').addEventListener('change', populateGuestRoomSelect);
-        document.getElementById('btn-assign-room').addEventListener('click', confirmGuestRole);
-
-        // Guest quick actions
-        document.querySelectorAll('.quick-btn').forEach(btn => {
-            btn.addEventListener('click', () => handleQuickAction(btn.dataset.action));
-        });
-
-        // New channel modal
-        document.getElementById('btn-new-channel').addEventListener('click', () => showModal('new-channel-modal'));
-        document.getElementById('btn-create-channel').addEventListener('click', handleCreateChannel);
-
-        // Clear chat / alerts
-        document.getElementById('btn-clear-chat').addEventListener('click', clearChatHistory);
-        document.getElementById('btn-clear-alerts').addEventListener('click', clearAlerts);
-
-        // Reset incident
-        DOM.btnResetIncident.addEventListener('click', () => {
-            showConfirm(
-                'Clear Active Incident',
-                'This will reset the incident timer, clear all room alerts, and return all rooms to safe status. Continue?',
-                'restart_alt',
-                resetIncident
-            );
-        });
-
-        // Confirm dialog
-        document.getElementById('btn-confirm-action').addEventListener('click', () => {
-            hideModal('confirm-modal');
-            if (state._confirmCallback) {
-                state._confirmCallback();
-                state._confirmCallback = null;
-            }
-        });
-
-        // Close modals
-        document.querySelectorAll('.btn-close-modal, .btn-cancel').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const modalId = btn.dataset.modal;
-                if (modalId) {
-                    hideModal(modalId);
-                    if (modalId === 'webcam-modal') stopWebcamDetection();
-                }
-            });
-        });
-
-        // Click outside modal
-        document.querySelectorAll('.modal-overlay').forEach(overlay => {
-            overlay.addEventListener('click', e => {
-                if (e.target === overlay) {
-                    hideModal(overlay.id);
-                    if (overlay.id === 'webcam-modal') stopWebcamDetection();
-                }
-            });
-        });
-
-        // Channel search
-        DOM.channelSearch.addEventListener('input', () => renderChannels(DOM.channelSearch.value));
-
-        // Close pinned alert
-        document.getElementById('btn-close-pinned').addEventListener('click', () => {
-            DOM.pinnedAlert.style.display = 'none';
-        });
-
-        // Sidebar toggle (mobile)
-        document.getElementById('btn-toggle-sidebar').addEventListener('click', () => {
-            DOM.sidebarChannels.classList.toggle('open');
-        });
-
-        // Toggle right sidebar
-        document.getElementById('btn-toggle-alerts').addEventListener('click', () => {
-            DOM.sidebarAlerts.classList.toggle('open');
-            DOM.sidebarAlerts.style.display = DOM.sidebarAlerts.classList.contains('open') ? 'flex' : '';
-        });
-
-        // Escape closes modals
-        document.addEventListener('keydown', e => {
-            if (e.key === 'Escape') {
-                document.querySelectorAll('.modal-overlay').forEach(m => {
-                    if (m.style.display !== 'none') hideModal(m.id);
-                });
-                stopWebcamDetection();
-            }
-        });
-
-        // Attach file button (placeholder)
-        document.getElementById('btn-attach').addEventListener('click', () => {
-            showToast('Attach Files', 'File attachment will be available when connected to a backend server.', 'info');
+            if (DOM.roleDropdown) DOM.roleDropdown.classList.toggle('open');
         });
     }
+
+    const roleOptAdmin = document.getElementById('role-opt-admin');
+    const roleOptGuest = document.getElementById('role-opt-guest');
+    if (roleOptAdmin) roleOptAdmin.addEventListener('click', () => {
+        if (DOM.roleDropdown) DOM.roleDropdown.classList.remove('open');
+        switchRole('admin');
+    });
+    if (roleOptGuest) roleOptGuest.addEventListener('click', () => {
+        if (DOM.roleDropdown) DOM.roleDropdown.classList.remove('open');
+        switchRole('guest');
+    });
+
+    // Guest modal
+    const guestFloor = document.getElementById('guest-floor');
+    if (guestFloor) guestFloor.addEventListener('change', populateGuestRoomSelect);
+    const assignBtn = document.getElementById('btn-assign-room');
+    if (assignBtn) assignBtn.addEventListener('click', confirmGuestRole);
+
+    // Guest quick actions
+    document.querySelectorAll('.quick-btn').forEach(btn => {
+        btn.addEventListener('click', () => handleQuickAction(btn.dataset.action));
+    });
+
+    // New channel
+    if (DOM.btnNewChannel) DOM.btnNewChannel.addEventListener('click', () => showModal('new-channel-modal'));
+    const createChannelBtn = document.getElementById('btn-create-channel');
+    if (createChannelBtn) createChannelBtn.addEventListener('click', handleCreateChannel);
+
+    // Clear buttons
+    if (DOM.btnClearChat) DOM.btnClearChat.addEventListener('click', clearChatHistory);
+    if (DOM.btnClearAlerts) DOM.btnClearAlerts.addEventListener('click', clearAlerts);
+
+    // Confirm dialog
+    const confirmBtn = document.getElementById('btn-confirm-action');
+    if (confirmBtn) confirmBtn.addEventListener('click', () => {
+        hideModal('confirm-modal');
+        if (state._confirmCallback) {
+            state._confirmCallback();
+            state._confirmCallback = null;
+        }
+    });
+
+    // Close modals
+    document.querySelectorAll('.btn-close-modal, .btn-cancel').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const modalId = btn.dataset.modal;
+            if (modalId) hideModal(modalId);
+        });
+    });
+
+    // Click outside modal
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+        overlay.addEventListener('click', e => {
+            if (e.target === overlay) hideModal(overlay.id);
+        });
+    });
+
+    // Channel search
+    if (DOM.channelSearch) DOM.channelSearch.addEventListener('input', () => renderChannels(DOM.channelSearch.value));
+
+    // Close pinned alert
+    if (DOM.btnClosePinned) DOM.btnClosePinned.addEventListener('click', () => {
+        if (DOM.pinnedAlert) DOM.pinnedAlert.style.display = 'none';
+    });
+
+    // Sidebar toggle
+    if (DOM.btnToggleSidebar) {
+        DOM.btnToggleSidebar.addEventListener('click', () => {
+            if (DOM.sidebarChannels) DOM.sidebarChannels.classList.toggle('open');
+        });
+    }
+
+    // Toggle right sidebar
+    if (DOM.btnToggleAlerts) {
+        DOM.btnToggleAlerts.addEventListener('click', () => {
+            if (DOM.sidebarAlerts) {
+                DOM.sidebarAlerts.classList.toggle('open');
+                DOM.sidebarAlerts.style.display = DOM.sidebarAlerts.classList.contains('open') ? 'flex' : '';
+            }
+        });
+    }
+
+    // Escape closes modals
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.modal-overlay').forEach(m => {
+                if (m.style.display !== 'none') hideModal(m.id);
+            });
+        }
+    });
+
+    // Attach file (optional)
+    if (DOM.btnAttach) {
+        DOM.btnAttach.addEventListener('click', () => {
+            showToast('Attach Files', 'File attachment coming soon.', 'info');
+        });
+    }
+}
 
     function handleSend() {
         const text = DOM.messageInput.value.trim();
@@ -1915,159 +1962,187 @@ Respond in this exact JSON format:
         console.log('%c🚨 Emergency Command Messenger v3.0 initialized with DB sync', 'color:#ef4444;font-size:14px;font-weight:bold');
     }
 
-    async function syncWithBackend() {
-        try {
-            const [users, logs, fireState] = await Promise.all([
-                apiFetch('/api/users'),
-                apiFetch('/api/logs'),
-                apiFetch('/api/fire')
-            ]);
+   async function syncWithBackend() {
+    try {
+        const [users, logs, fireState] = await Promise.all([
+            apiFetch('/api/users'),
+            apiFetch('/api/logs'),
+            apiFetch('/api/fire')
+        ]);
 
-            if (DOM.connectionDot) {
-                DOM.connectionDot.classList.add('active');
-                DOM.connectionDot.classList.remove('offline');
-                DOM.connectionDot.title = 'System Live - ' + new Date().toLocaleTimeString();
-            }
+        if (DOM.connectionDot) {
+            DOM.connectionDot.classList.add('active');
+            DOM.connectionDot.classList.remove('offline');
+            DOM.connectionDot.title = 'System Live - ' + new Date().toLocaleTimeString();
+        }
 
-            if (users) {
-                // Update Staff List
-                const apiStaff = users.filter(u => u.type === 'staff');
-                state.staff = apiStaff.map(u => ({
-                    id: u._id,
-                    name: u.name,
-                    initials: u.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase(),
-                    role: u.role === 'rescue' ? 'Rescue Team' : 'Evacuation Team',
-                    status: u.status === 'moving' ? 'on-route' : (u.status || 'active'),
-                    node: u.node || 'Base',
-                    color: u.role === 'rescue' ? '#ff4d4d' : '#22c55e'
-                }));
+        if (users) {
+            allUsers = users; // module-level cache
 
-                // Update Room Grid Status from Guest Users
-                const guests = users.filter(u => u.type === 'guest');
-                
-                Object.keys(state.rooms).forEach(floorKey => {
-                    state.rooms[floorKey].forEach(room => {
-                        // Handle potential 'Room ' prefix in node name if it exists in DB
-                        const guestInRoom = guests.find(g => 
-                            g.node === room.num || 
-                            g.node === `Room ${room.num}` || 
-                            (room.num.startsWith('Room') && g.node === room.num.replace('Room ', ''))
-                        );
-                        
-                        if (guestInRoom) {
-                            room.status = guestInRoom.status; // 'safe', 'help', 'moving'
-                            room.lastUpdate = `${guestInRoom.name}: ${guestInRoom.status.toUpperCase()}`;
-                            room.lastUpdateTime = new Date(guestInRoom.updatedAt).getTime();
-                        } else {
-                            // If no guest, room is safe/idle unless fire is there
-                            const isFire = fireState?.blockedNodes?.includes(room.num);
-                            room.status = isFire ? 'alert' : 'safe';
-                            room.lastUpdate = isFire ? '🔥 FIRE INCIDENT' : 'Room Empty';
-                        }
-                    });
-                });
+            // ── Staff list ──
+            const apiStaff = users.filter(u => u.type === 'staff');
+            state.staff = apiStaff.map(u => ({
+                id: u._id,
+                name: u.name,
+                initials: u.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase(),
+                role: u.role === 'rescue' ? 'Rescue Team' : 'Evacuation Team',
+                status: u.status === 'moving' ? 'on-route' : (u.status || 'active'),
+                node: u.node || 'Base',
+                color: u.role === 'rescue' ? '#ff4d4d' : '#22c55e'
+            }));
 
-                // Update Channel Previews for Rooms
-                state.channels.forEach(ch => {
-                    if (ch.type === 'room') {
-                        const roomNum = ch.id.replace('room-', '');
-                        const guestInRoom = guests.find(g => g.node === roomNum || g.node === `Room ${roomNum}`);
-                        if (guestInRoom) {
-                            ch.members = 1;
-                            ch.lastMessage = `👤 ${guestInRoom.name}: ${guestInRoom.status.toUpperCase()}`;
-                            ch.lastTime = formatTime(guestInRoom.updatedAt || Date.now());
-                            if (guestInRoom.status === 'help') ch.hasAlert = true;
-                        } else {
-                            ch.members = 0;
-                            ch.lastMessage = 'No occupants';
-                        }
+            const guests = users.filter(u => u.type === 'guest');
+
+            // ── Room grid status from guests ──
+            Object.keys(state.rooms).forEach(floorKey => {
+                state.rooms[floorKey].forEach(room => {
+                    const guestInRoom = guests.find(g =>
+                        g.node === room.num ||
+                        g.node === `Room ${room.num}` ||
+                        (room.num.startsWith('Room') && g.node === room.num.replace('Room ', ''))
+                    );
+                    if (guestInRoom) {
+                        room.status = guestInRoom.status;
+                        room.lastUpdate = `${guestInRoom.name}: ${guestInRoom.status.toUpperCase()}`;
+                        room.lastUpdateTime = new Date(guestInRoom.updatedAt || Date.now()).getTime();
+                    } else {
+                        const isFire = fireState?.blockedNodes?.includes(room.num);
+                        room.status = isFire ? 'alert' : 'safe';
+                        room.lastUpdate = isFire ? '🔥 FIRE INCIDENT' : 'Room Empty';
                     }
                 });
+            });
 
-                // ── Update Dynamic Groups (Safe/Unsafe Guests) ──
-                const unsafe = guests.filter(g => g.status === 'help' || g.status === 'moving');
-                const safe = guests.filter(g => g.status === 'safe');
-
-                const unsafeCh = state.channels.find(c => c.id === 'unsafe-guests');
-                if (unsafeCh) {
-                    unsafeCh.members = unsafe.length;
-                    unsafeCh.lastMessage = unsafe.length > 0 
-                        ? `🆘 NEED HELP: ${unsafe.map(g => g.name).slice(0, 3).join(', ')}${unsafe.length > 3 ? '...' : ''}`
-                        : 'No guests currently in danger';
-                    unsafeCh.hasAlert = unsafe.length > 0;
-                    unsafeCh.lastTime = formatTime(Date.now());
+            // ── Room channel previews ──
+            state.channels.forEach(ch => {
+                if (ch.type === 'room') {
+                    const roomNum = ch.id.replace('room-', '');
+                    const guestInRoom = guests.find(g =>
+                        g.node === roomNum || g.node === `Room ${roomNum}`
+                    );
+                    if (guestInRoom) {
+                        ch.members = 1;
+                        ch.lastMessage = `👤 ${guestInRoom.name}: ${guestInRoom.status.toUpperCase()}`;
+                        ch.lastTime = formatTime(guestInRoom.updatedAt || Date.now());
+                        if (guestInRoom.status === 'help') ch.hasAlert = true;
+                    } else {
+                        ch.members = 0;
+                        ch.lastMessage = 'No occupants';
+                    }
                 }
+            });
 
-                const safeCh = state.channels.find(c => c.id === 'safe-guests');
-                if (safeCh) {
-                    safeCh.members = safe.length;
-                    safeCh.lastMessage = safe.length > 0 
-                        ? `✅ SAFE: ${safe.map(g => g.name).slice(0, 3).join(', ')}${safe.length > 3 ? '...' : ''}`
-                        : 'No safe reports received yet';
-                    safeCh.lastTime = formatTime(Date.now());
-                }
+            // ── Safe / Unsafe guest channels ──
+            const unsafe = guests.filter(g => g.status === 'help' || g.status === 'moving');
+            const safe   = guests.filter(g => g.status === 'safe');
 
-                const allEmCh = state.channels.find(c => c.id === 'all-emergency');
-                if (allEmCh) allEmCh.members = guests.length;
-
-                renderChannels();
+            const unsafeCh = state.channels.find(c => c.id === 'unsafe-guests');
+            if (unsafeCh) {
+                unsafeCh.members = unsafe.length;
+                unsafeCh.lastMessage = unsafe.length > 0
+                    ? `🆘 ${unsafe.map(g => g.name).slice(0, 3).join(', ')}${unsafe.length > 3 ? '...' : ''}`
+                    : 'No guests currently in danger';
+                unsafeCh.hasAlert = unsafe.length > 0;
+                unsafeCh.lastTime = formatTime(Date.now());
             }
 
-            // Sync Incident State
-            if (fireState && fireState.simulationRunning) {
-                const fireNode = fireState.node || fireState.blockedNodes?.[0];
-                const statusText = `🔥 FIRE INCIDENT - NODE ${fireNode}`;
-                
-                if (DOM.incidentTag) DOM.incidentTag.textContent = statusText;
-                if (DOM.sidebarIncidentTag) DOM.sidebarIncidentTag.textContent = statusText;
-                
-                if (DOM.incidentTag) DOM.incidentTag.classList.add('active');
-                if (DOM.sidebarIncidentTag) DOM.sidebarIncidentTag.classList.add('active');
-
-                DOM.pinnedAlert.style.display = 'flex';
-                DOM.pinnedAlertText.textContent = `🚨 CRITICAL ALERT: Fire detected at Node ${fireNode}. Automated emergency protocol active.`;
-                
-                if (DOM.btnResetIncident) DOM.btnResetIncident.style.display = 'flex';
-                if (DOM.sidebarBtnResetIncident) DOM.sidebarBtnResetIncident.style.display = 'flex';
-            } else {
-                const statusText = `NO ACTIVE INCIDENT`;
-                if (DOM.incidentTag) DOM.incidentTag.textContent = statusText;
-                if (DOM.sidebarIncidentTag) DOM.sidebarIncidentTag.textContent = statusText;
-
-                if (DOM.incidentTag) DOM.incidentTag.classList.remove('active');
-                if (DOM.sidebarIncidentTag) DOM.sidebarIncidentTag.classList.remove('active');
-
-                DOM.pinnedAlert.style.display = 'none';
-                
-                if (DOM.btnResetIncident) DOM.btnResetIncident.style.display = 'none';
-                if (DOM.sidebarBtnResetIncident) DOM.sidebarBtnResetIncident.style.display = 'none';
+            const safeCh = state.channels.find(c => c.id === 'safe-guests');
+            if (safeCh) {
+                safeCh.members = safe.length;
+                safeCh.lastMessage = safe.length > 0
+                    ? `✅ ${safe.map(g => g.name).slice(0, 3).join(', ')}${safe.length > 3 ? '...' : ''}`
+                    : 'No safe reports received yet';
+                safeCh.lastTime = formatTime(Date.now());
             }
 
-            if (logs) {
-                state.alerts = logs.slice(0, 15).map(log => ({
-                    id: log._id,
-                    type: log.message.toLowerCase().includes('fire') ? 'critical' : 'info',
-                    title: log.message,
-                    desc: formatTime(log.timestamp),
-                    time: new Date(log.timestamp).getTime(),
-                    icon: log.message.toLowerCase().includes('fire') ? 'local_fire_department' : 'info'
-                }));
-            }
+            const allEmCh = state.channels.find(c => c.id === 'all-emergency');
+            if (allEmCh) allEmCh.members = guests.length;
 
-            renderAlerts();
-            renderStaff();
-            renderRoomGrid();
-            updateStats();
+            renderChannels();
 
-        } catch (err) {
-            console.error('[SYNC ERROR]', err);
-            if (DOM.connectionDot) {
-                DOM.connectionDot.classList.remove('active');
-                DOM.connectionDot.classList.add('offline');
-                DOM.connectionDot.title = 'System Offline - Reconnecting...';
+            // ── If currently viewing a roster channel, live-refresh it ──
+            if (state.currentChannelId === 'safe-guests' ||
+                state.currentChannelId === 'unsafe-guests') {
+                renderMessages();
             }
         }
+
+        // ── Incident / fire state ──
+        const isIncident = fireState &&
+            (fireState.status === 'active' || fireState.simulationRunning === true);
+
+        if (isIncident) {
+            const fireNode = fireState.node || fireState.blockedNodes?.[0] || 'Node ?';
+            const statusText = `🔥 FIRE INCIDENT - NODE ${fireNode}`;
+
+            state.incidentActive = true;
+            // Stricter start time check
+            const dbStartTime = fireState.createdAt ? new Date(fireState.createdAt).getTime() : null;
+            state.incidentStartTime = dbStartTime || state.incidentStartTime || Date.now();
+            state.fireNodes = fireState.blockedNodes || [fireNode];
+
+            if (DOM.incidentTag) DOM.incidentTag.textContent = statusText;
+            if (DOM.sidebarIncidentTag) DOM.sidebarIncidentTag.textContent = statusText;
+            
+            if (DOM.incidentTag) DOM.incidentTag.classList.add('active');
+            if (DOM.sidebarIncidentTag) DOM.sidebarIncidentTag.classList.add('active');
+            if (DOM.activeIncidentCard) DOM.activeIncidentCard.classList.add('active');
+
+            DOM.pinnedAlert.style.display = 'flex';
+            DOM.pinnedAlertText.textContent = `🚨 CRITICAL ALERT: Fire detected at Node ${fireNode}. Automated emergency protocol active.`;
+            
+            if (DOM.btnResetIncident) DOM.btnResetIncident.style.display = 'flex';
+            if (DOM.sidebarBtnResetIncident) DOM.sidebarBtnResetIncident.style.display = 'flex';
+        } else {
+            // FORCE CLEAR EVERYTHING
+            state.incidentActive = false;
+            state.incidentStartTime = null;
+            state.fireNodes = [];
+
+            const statusText = 'NO ACTIVE INCIDENT';
+            if (DOM.incidentTag) DOM.incidentTag.textContent = statusText;
+            if (DOM.sidebarIncidentTag) DOM.sidebarIncidentTag.textContent = statusText;
+            
+            if (DOM.incidentTag) DOM.incidentTag.classList.remove('active');
+            if (DOM.sidebarIncidentTag) DOM.sidebarIncidentTag.classList.remove('active');
+            if (DOM.activeIncidentCard) DOM.activeIncidentCard.classList.remove('active');
+
+            if (DOM.incidentTimer) DOM.incidentTimer.textContent = '00:00:00';
+            if (DOM.sidebarIncidentTimer) DOM.sidebarIncidentTimer.textContent = '00:00:00';
+
+            DOM.pinnedAlert.style.display = 'none';
+            
+            if (DOM.btnResetIncident) DOM.btnResetIncident.style.display = 'none';
+            if (DOM.sidebarBtnResetIncident) DOM.sidebarBtnResetIncident.style.display = 'none';
+        }
+
+        // ── Logs → alert feed ──
+        if (logs) {
+            state.alerts = logs.slice(0, 15).map(log => ({
+                id: log._id,
+                type: log.message.toLowerCase().includes('fire') ? 'critical' : 'info',
+                title: log.message,
+                desc: formatTime(log.timestamp),
+                time: new Date(log.timestamp).getTime(),
+                icon: log.message.toLowerCase().includes('fire')
+                    ? 'local_fire_department' : 'info'
+            }));
+        }
+
+        renderAlerts();
+        renderStaff();
+        renderRoomGrid();
+        updateStats();
+
+    } catch (err) {
+        console.error('[SYNC ERROR]', err);
+        if (DOM.connectionDot) {
+            DOM.connectionDot.classList.remove('active');
+            DOM.connectionDot.classList.add('offline');
+            DOM.connectionDot.title = 'System Offline - Reconnecting...';
+        }
     }
+}
 
     // ======================== PUBLIC API ========================
     window.EmergencyMessenger = {
