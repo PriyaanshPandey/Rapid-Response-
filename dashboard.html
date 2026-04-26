@@ -580,11 +580,9 @@
         <span id="assembly-frac">0 of 0</span>
       </div>
       <div style="font-size:13px;font-weight:700;color:var(--text-white);margin-bottom:4px">Notify All Guests</div>
-      <button class="btn-whatsapp" onclick="sendWhatsApp(event)">
-        <span class="whatsapp-icon">✉</span>Send WhatsApp Message
+      <button class="btn-whatsapp" onclick="window.location.href='message.html'">
+        <span class="whatsapp-icon">✉</span>Open WhatsApp Messenger
       </button>
-      <div class="whatsapp-success" id="whatsapp-success">✔ Fire alert sent to all guests.</div>
-      <div class="msg-preview">"Please proceed immediately to the Assembly Point. This is an emergency evacuation notice."</div>
     </div>
   </aside>
 
@@ -1483,6 +1481,23 @@ function renderFireZones() {
     }
   });
 
+// ── BroadcastChannel: push live state to staff tabs instantly ──
+const _bc = (() => {
+  try { return new BroadcastChannel('rr_live'); } catch(e) { return null; }
+})();
+
+function broadcastState() {
+  if (!_bc) return;
+  _bc.postMessage({
+    type: 'state',
+    users: allUsers,
+    fireNodes: activeFireNodes,
+    meetingPoint: localStorage.getItem('rr_meetingPoint') || null,
+    paths: _pathCache,
+    ts: Date.now()
+  });
+}
+
   // ── Render functions ──
   function renderStats(users) {
     const guests = users.filter(u => u.type === 'guest');
@@ -1786,6 +1801,7 @@ async function logAction(msg) {
       renderNodeLabels(); 
       renderLogs(logs);
       flashFooter();
+      broadcastState(); 
       // Broadcast fire state to staff tabs
       try {
         localStorage.setItem('rr_fireNodes', JSON.stringify(activeFireNodes));
@@ -1794,7 +1810,7 @@ async function logAction(msg) {
 
       // Auto-check for simulation complete safely in the UI polling tick
       if (simulationRunning && activeFireNodes.length > 0) {
-        const mp = getFarthestNodeFromFire();
+        const mp = localStorage.getItem('rr_meetingPoint') || getFarthestNodeFromFire();
         const guests = users.filter(u => u.type === 'guest');
         if (guests.length > 0 && guests.every(u => u.node === mp)) {
           await checkEvacuationComplete(mp);
@@ -2122,86 +2138,110 @@ async function runRescue(meetingPoint) {
 }
 
 async function checkEvacuationComplete(meetingPoint) {
-  // Take a fresh snapshot to be absolutely sure
-  const users = await apiFetch('/api/users');
-  allUsers = users;
-  
-  const guests = users.filter(u => u.type === 'guest');
-  // Strictly check that EVERY guest dot is physically at the meeting point node
-  const allSafe = guests.length > 0 && guests.every(u => u.node === meetingPoint);
+  if (!simulationRunning) return;
 
-  if (allSafe && guests.length > 0 && simulationRunning) {
-    console.log("🏁 Mission Complete: All guests are safe at Node " + meetingPoint);
-    await logAction(`🟩 MISSION SUCCESS — All ${guests.length} guest(s) safely reached Node ${meetingPoint}`);
-    showEvacCompletePopup(meetingPoint, guests.length);
+  const mp = meetingPoint || localStorage.getItem('rr_meetingPoint') || 'm1';
+  
+  const guests = allUsers.filter(u => u.type === 'guest');
+  if (!guests.length) return;
+
+  // Check if every guest is at the meeting point
+  const allSafe = guests.every(u => u.node === mp);
+
+  if (allSafe) {
+    console.log("🏁 Mission Complete: All guests are safe at Node " + mp);
     
-    // Auto-stop the simulation loops and reset states
+    // Stop simulation BEFORE showing popup to prevent multiple triggers
     simulationRunning = false;
+    localStorage.setItem('rr_simulationRunning', 'false');
     stopSimRefreshLoop();
-    document.getElementById('btn-stop-sim').disabled = true;
-    document.getElementById('btn-trigger-fire').disabled = false;
+
+    await logAction(`🟩 MISSION SUCCESS — All ${guests.length} guest(s) safely reached Node ${mp}`);
+    showEvacCompletePopup(mp, guests.length);
+    
+    const btnStop = document.getElementById('btn-stop-sim');
+    const btnTrigger = document.getElementById('btn-trigger-fire');
+    if (btnStop) btnStop.disabled = true;
+    if (btnTrigger) btnTrigger.disabled = false;
   }
 }
 
 function showEvacCompletePopup(meetingPoint, count) {
-  // Remove existing popup if any
   const existing = document.getElementById('evac-complete-overlay');
   if (existing) existing.remove();
 
   const overlay = document.createElement('div');
   overlay.id = 'evac-complete-overlay';
   overlay.style.cssText = `
-    position: fixed; inset: 0; background: rgba(0,0,0,0.85);
-    z-index: 9999; display: flex; align-items: center; justify-content: center;
-    backdrop-filter: blur(8px); animation: fade-in 0.5s ease-out;
+    position: fixed; inset: 0; background: rgba(2, 6, 23, 0.9);
+    z-index: 10000; display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(12px); animation: fade-in 0.4s ease-out;
   `;
 
   const popup = document.createElement('div');
   popup.style.cssText = `
-    background: linear-gradient(145deg, #0d1f0d, #050a05);
-    border: 2px solid #22c55e;
-    border-radius: 20px; padding: 40px 60px;
-    text-align: center; 
-    box-shadow: 0 0 80px rgba(34,197,94,0.6), inset 0 0 20px rgba(34,197,94,0.2);
-    transform: scale(0.8);
-    animation: popup-bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-    position: relative; overflow: hidden;
+    background: linear-gradient(165deg, #06371b 0%, #021a0d 100%);
+    border: 1px solid rgba(34, 197, 94, 0.4);
+    border-radius: 24px; padding: 48px;
+    width: 460px; text-align: center; 
+    box-shadow: 0 0 100px rgba(34, 197, 94, 0.15), inset 0 0 40px rgba(34, 197, 94, 0.1);
+    animation: popup-slide 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
   `;
 
-  // Inject keyframes dynamic styling
   const style = document.createElement('style');
   style.textContent = `
-    @keyframes popup-bounce {
-      0% { transform: scale(0.5); opacity: 0; }
-      100% { transform: scale(1); opacity: 1; }
+    @keyframes popup-slide {
+      0% { transform: translateY(30px) scale(0.95); opacity: 0; }
+      100% { transform: translateY(0) scale(1); opacity: 1; }
     }
-    @keyframes float-icon {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-10px); }
+    .success-icon-wrap {
+      width: 80px; height: 80px; background: rgba(34, 197, 94, 0.1);
+      border: 2px solid #22c55e; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 24px; color: #22c55e;
+      box-shadow: 0 0 20px rgba(34, 197, 94, 0.2);
     }
-    .evac-btn {
-      padding: 14px 40px; background: #22c55e; color: #000;
-      border: none; border-radius: 10px; font-size: 16px; font-weight: 900;
-      cursor: pointer; letter-spacing: 0.1em; text-transform: uppercase;
-      transition: all 0.2s; box-shadow: 0 4px 15px rgba(34,197,94,0.4);
+    .evac-btn-luxe {
+      margin-top: 32px; width: 100%; padding: 16px;
+      background: #22c55e; color: #052e16;
+      border: none; border-radius: 12px; font-size: 14px; font-weight: 800;
+      cursor: pointer; letter-spacing: 1px; text-transform: uppercase;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 10px 25px -5px rgba(34, 197, 94, 0.4);
     }
-    .evac-btn:hover {
-      transform: translateY(-2px) scale(1.05);
-      background: #16a34a; box-shadow: 0 6px 20px rgba(34,197,94,0.6);
+    .evac-btn-luxe:hover {
+      background: #4ade80; transform: translateY(-2px);
+      box-shadow: 0 20px 25px -5px rgba(34, 197, 94, 0.5);
     }
   `;
   
   popup.innerHTML = `
-    <div style="font-size:72px; margin-bottom:16px; animation: float-icon 3s ease-in-out infinite;">🎉</div>
-    <div style="font-size:32px; font-weight:900; color:#22c55e; letter-spacing:0.05em; margin-bottom:12px; text-shadow: 0 0 20px rgba(34,197,94,0.8);">
-      SIMULATION ENDED
+    <div class="success-icon-wrap">
+      <span class="material-icons-round" style="font-size: 48px;">task_alt</span>
     </div>
-    <div style="font-size:18px; color:#d1d5db; margin-bottom:30px; font-weight: 500;">
-      All <strong style="color:#fff; font-size: 20px;">${count} guests</strong> have safely reached<br>
-      <strong style="color:#22c55e; font-size: 22px; display:inline-block; margin-top:8px; padding: 4px 12px; background:rgba(34,197,94,0.1); border-radius: 8px; border: 1px solid rgba(34,197,94,0.3);">Node ${meetingPoint}</strong>
+    <div style="font-size: 12px; font-weight: 800; color: #4ade80; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px;">
+      Operation Successful
     </div>
-    <button class="evac-btn" onclick="document.getElementById('evac-complete-overlay').remove()">
-      DISMISS
+    <h2 style="font-size: 32px; font-weight: 900; color: #fff; margin-bottom: 16px; letter-spacing: -0.5px;">
+      Mission Accomplished
+    </h2>
+    <p style="color: #94a3b8; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">
+      All <b style="color: #fff;">${count} building guests</b> have been successfully rescued and evacuated to the primary safe zone.
+    </p>
+    <div style="background: rgba(0,0,0,0.3); border-radius: 16px; padding: 16px; display: flex; justify-content: space-around; border: 1px solid rgba(255,255,255,0.05);">
+        <div>
+            <div style="font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase;">Final Status</div>
+            <div style="font-size: 18px; color: #22c55e; font-weight: 800;">SAFE</div>
+        </div>
+        <div style="width: 1px; background: rgba(255,255,255,0.1);"></div>
+        <div>
+            <div style="font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase;">Location</div>
+            <div style="font-size: 18px; color: #fff; font-weight: 800;">NODE ${meetingPoint}</div>
+        </div>
+    </div>
+    <button class="evac-btn-luxe" onclick="document.getElementById('evac-complete-overlay').remove()">
+      RETURN TO COMMAND
     </button>
   `;
 
@@ -2448,24 +2488,32 @@ async function animateMovement(user, path, finalNode, colorHint) {
   drawPathLine(lineId, validPoints, color, glow);
 
   // Move node by node
-  for (let i = 0; i < path.length; i++) {
+ for (let i = 0; i < path.length; i++) {
     if (!simulationRunning) break;
-    apiPost('/api/user-status', {
+    await apiPost('/api/user-status', {
       userId: user._id, node: path[i], status: 'moving'
     }).catch(e => console.error('move', e));
     user.node = path[i];
+    // Update allUsers in-place so broadcastState sends current positions
+    const idx = allUsers.findIndex(u => u._id === user._id);
+    if (idx !== -1) allUsers[idx].node = path[i];
+    broadcastState(); // ← push to staff tabs immediately
     await delay(700);
   }
 
   await removePathLine(lineId);
 
   if (!simulationRunning) return;
+
   await apiPost('/api/user-status', {
     userId: user._id,
     node: finalNode || path[path.length - 1],
     status: user.type === 'staff' ? 'idle' : 'safe'
   });
+
+  broadcastState(); // ✅ added
 }
+
 
 // ── Animate TWO users moving together on the SAME path (one line drawn) ──
 async function animateMovementPair(staff, guest, path, finalNode, colorHint) {
@@ -2483,16 +2531,17 @@ async function animateMovementPair(staff, guest, path, finalNode, colorHint) {
   drawPathLine(lineId, validPoints, color, glow);
 
   // Move both node by node together
-  for (let i = 0; i < path.length; i++) {
+ for (let i = 0; i < path.length; i++) {
     if (!simulationRunning) break;
-    apiPost('/api/user-status', {
-      userId: staff._id, node: path[i], status: 'moving'
-    }).catch(e => console.error('move-s', e));
-    apiPost('/api/user-status', {
-      userId: guest._id, node: path[i], status: 'moving'
-    }).catch(e => console.error('move-g', e));
+    apiPost('/api/user-status', { userId: staff._id, node: path[i], status: 'moving' }).catch(() => {});
+    apiPost('/api/user-status', { userId: guest._id, node: path[i], status: 'moving' }).catch(() => {});
     staff.node = path[i];
     guest.node = path[i];
+    const si = allUsers.findIndex(u => u._id === staff._id);
+    const gi = allUsers.findIndex(u => u._id === guest._id);
+    if (si !== -1) allUsers[si].node = path[i];
+    if (gi !== -1) allUsers[gi].node = path[i];
+    broadcastState(); // ← push to staff tabs
     await delay(700);
   }
 
@@ -2534,24 +2583,7 @@ async function sendRescue(userId, node, name, btn) {
     btn.disabled = false;
   }
 }
-  async function sendWhatsApp(event) {
-    const btn = event.currentTarget;
-    const circle = document.createElement('span');
-    const d=Math.max(btn.clientWidth,btn.clientHeight), r=d/2;
-    const rect=btn.getBoundingClientRect();
-    circle.style.cssText=`width:${d}px;height:${d}px;left:${event.clientX-rect.left-r}px;top:${event.clientY-rect.top-r}px`;
-    circle.className='ripple'; btn.querySelector('.ripple')?.remove(); btn.appendChild(circle);
-    try {
-      const node = incidentData?.node || 'UNKNOWN';
-      await apiPost('/api/fire', {node});
-      document.getElementById('whatsapp-success').style.display='block';
-      setTimeout(()=>{ document.getElementById('whatsapp-success').style.display='none'; },4000);
-      setTimeout(refresh,500);
-    } catch(e) {
-      const el=document.getElementById('whatsapp-success');
-      el.textContent='✗ Send failed. Check backend.'; el.style.color='var(--danger)'; el.style.display='block';
-    }
-  }
+
 
   function startIncidentTimer(startDate) {
     if (timerInterval) clearInterval(timerInterval);

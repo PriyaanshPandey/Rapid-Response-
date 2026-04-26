@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Emergency Rapid Response Messaging System — Real-time disaster communication for hospitals and buildings">
+    <title>Emergency Command Messenger</title>
+    <link rel="stylesheet" href="message.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <script src="config.js"></script>
+</head>
+<body>
+    <!-- ======================== TOP EMERGENCY BAR ======================== -->
+    <header id="emergency-header">
+        <div class="header-left">
+            <div class="logo-pulse">
+                <span class="pulse-dot"></span>
+            </div>
+            <h1 id="app-title">Emergency Command Messenger</h1>
+            <span class="header-badge" id="connection-status">
+                <span class="status-dot online"></span> CONNECTED
+            </span>
+        </div>
+        <div class="header-center">
+            <div class="incident-card" id="active-incident-card">
+                <span class="incident-label">ACTIVE INCIDENT</span>
+                <span class="incident-type" id="incident-type-display">No Active Incident</span>
+                <span class="incident-timer" id="incident-timer">00:00:00</span>
+                <button class="btn-icon btn-reset-incident admin-only" id="btn-reset-incident" title="Clear Incident" style="display:none;">
+                    <span class="material-icons-round">restart_alt</span>
+                </button>
+            </div>
+
+            <div class="header-center">
+                <div class="incident-status-tag" id="incident-type-display">NO ACTIVE INCIDENT</div>
+                <div class="incident-timer" id="incident-timer">00:00:00</div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">ROOMS ALERTED</span>
+                <span class="stat-value" id="rooms-alerted-count">0 / 28</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">MESSAGES</span>
+                <span class="stat-value" id="message-count">0</span>
+            </div>
+        </div>
+        <div class="header-right">
+            <!-- Admin-only buttons -->
+            <button class="btn-broadcast admin-only" id="btn-open-broadcast" title="Emergency Broadcast">
+                <span class="material-icons-round">campaign</span>
+                BROADCAST
+            </button>
+            <button class="btn-header-action" onclick="window.location.href='dashboard.html'" title="Back to Command Center">
+                <span class="material-icons-round">dashboard</span>
+                COMMAND CENTER
+            </button>
+            <!-- Role Switcher -->
+            <div class="role-switcher" id="role-switcher">
+                <button class="user-badge" id="current-user-badge">
+                    <span class="user-avatar" id="user-avatar-text">AD</span>
+                    <span class="user-name" id="user-name-text">Admin</span>
+                    <span class="connection-dot active" id="connection-status-dot" title="System Online"></span>
+                    <span class="material-icons-round dropdown-arrow">expand_more</span>
+                </button>
+                <div class="role-dropdown" id="role-dropdown">
+                    <div class="role-dropdown-header">Switch Role</div>
+                    <button class="role-option active" data-role="admin" id="role-opt-admin">
+                        <span class="material-icons-round">admin_panel_settings</span>
+                        <div>
+                            <div class="role-opt-title">Admin Control</div>
+                            <div class="role-opt-desc">Full emergency management</div>
+                        </div>
+                    </button>
+                    <button class="role-option" data-role="guest" id="role-opt-guest">
+                        <span class="material-icons-round">person</span>
+                        <div>
+                            <div class="role-opt-title">Guest / Patient</div>
+                            <div class="role-opt-desc">Receive alerts & request help</div>
+                        </div>
+                    </button>
+                    <div class="role-dropdown-divider"></div>
+                    <button class="role-option" id="btn-settings">
+                        <span class="material-icons-round">settings</span>
+                        <div>
+                            <div class="role-opt-title">Settings</div>
+                            <div class="role-opt-desc">API key & preferences</div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ======================== MAIN LAYOUT ======================== -->
+    <main id="app-main">
+        <!-- ======== LEFT SIDEBAR: Channels ======== -->
+        <aside id="sidebar-channels" class="sidebar">
+            <div class="sidebar-header">
+                <h2>Channels</h2>
+                <button class="btn-icon admin-only" id="btn-new-channel" title="Create Channel">
+                    <span class="material-icons-round">add_circle</span>
+                </button>
+            </div>
+            <div class="search-box">
+                <span class="material-icons-round">search</span>
+                <input type="text" id="channel-search" placeholder="Search channels..." autocomplete="off">
+            </div>
+
+            <!-- Channel Groups -->
+            <div class="channel-section">
+                <h3 class="section-title"><span class="material-icons-round">warning</span> Emergency Groups</h3>
+                <ul class="channel-list" id="emergency-channels"></ul>
+            </div>
+            <div class="channel-section">
+                <h3 class="section-title"><span class="material-icons-round">meeting_room</span> Rooms</h3>
+                <ul class="channel-list" id="room-channels"></ul>
+            </div>
+        </aside>
+
+        <!-- ======== CENTER: Chat Panel ======== -->
+        <section id="chat-panel">
+            <div class="chat-header" id="chat-header">
+                <div class="chat-header-info">
+                    <button class="btn-icon sidebar-toggle" id="btn-toggle-sidebar">
+                        <span class="material-icons-round">menu</span>
+                    </button>
+                    <div class="chat-avatar" id="chat-avatar">🏥</div>
+                    <div class="chat-meta">
+                        <h2 id="chat-channel-name">All Floors — Emergency</h2>
+                        <span class="chat-sub" id="chat-channel-sub">28 rooms • All floors</span>
+                    </div>
+                </div>
+                <div class="chat-header-actions">
+                    <button class="btn-icon" id="btn-clear-chat" title="Clear Chat History">
+                        <span class="material-icons-round">delete_sweep</span>
+                    </button>
+                    <button class="btn-icon" id="btn-channel-info" title="Channel Info">
+                        <span class="material-icons-round">info</span>
+                    </button>
+                    <button class="btn-icon" id="btn-toggle-alerts" title="Alert Panel">
+                        <span class="material-icons-round">notifications_active</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Pinned Alert Banner -->
+            <div class="pinned-alert" id="pinned-alert" style="display:none;">
+                <span class="material-icons-round">report</span>
+                <span class="pinned-text" id="pinned-alert-text"></span>
+                <button class="btn-icon btn-close-pinned" id="btn-close-pinned">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+
+            <!-- Messages Container -->
+            <div class="messages-container" id="messages-container">
+                <div class="messages-scroll" id="messages-scroll">
+                    <!-- Messages get injected here by JS -->
+                </div>
+            </div>
+
+            <!-- Typing Indicator -->
+            <div class="typing-indicator" id="typing-indicator" style="display:none;">
+                <div class="typing-dots">
+                    <span></span><span></span><span></span>
+                </div>
+                <span class="typing-text">Someone is typing...</span>
+            </div>
+
+            <!-- Guest Quick Actions -->
+            <div class="quick-actions guest-only" id="quick-actions" style="display:none;">
+                <button class="quick-btn quick-sos" data-action="sos">🆘 Need Help</button>
+                <button class="quick-btn quick-safe" data-action="safe">✅ I'm Safe</button>
+                <button class="quick-btn quick-medical" data-action="medical">🏥 Medical Help</button>
+                <button class="quick-btn quick-report" data-action="report">ℹ️ Report Issue</button>
+            </div>
+
+            <!-- Message Input -->
+            <div class="message-input-container" id="message-input-container">
+                <div class="severity-selector admin-only" id="severity-selector">
+                    <button class="severity-btn active" data-severity="normal" title="Normal Message">
+                        <span class="material-icons-round">chat</span>
+                    </button>
+                    <button class="severity-btn" data-severity="info" title="Info Alert">
+                        <span class="material-icons-round">info</span>
+                    </button>
+                    <button class="severity-btn" data-severity="warning" title="Warning">
+                        <span class="material-icons-round">warning</span>
+                    </button>
+                    <button class="severity-btn" data-severity="critical" title="Critical">
+                        <span class="material-icons-round">error</span>
+                    </button>
+                    <button class="severity-btn" data-severity="evacuation" title="Evacuation">
+                        <span class="material-icons-round">emergency</span>
+                    </button>
+                </div>
+                <div class="input-row">
+                    <button class="btn-icon" id="btn-attach" title="Attach File">
+                        <span class="material-icons-round">attach_file</span>
+                    </button>
+                    <textarea id="message-input" placeholder="Type emergency message..." rows="1" maxlength="2000"></textarea>
+                    <button class="btn-send" id="btn-send" title="Send Message" disabled>
+                        <span class="material-icons-round">send</span>
+                    </button>
+                </div>
+                <div class="input-info">
+                    <span id="char-count">0 / 2000</span>
+                    <span id="current-severity-label">Normal Message</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======== RIGHT SIDEBAR: Alerts & Room Status ======== -->
+        <aside id="sidebar-alerts" class="sidebar sidebar-right">
+            <div class="sidebar-header">
+                <h2>Alerts & Status</h2>
+                <button class="btn-icon admin-only" id="btn-clear-alerts" title="Clear All Alerts">
+                    <span class="material-icons-round">clear_all</span>
+                </button>
+            </div>
+
+            <!-- AI Alert Feed -->
+            <div class="alert-feed" id="alert-feed">
+                <!-- Alerts injected by JS -->
+            </div>
+
+            <!-- Incident Stats -->
+            <div class="incident-stats-section" id="active-incident-card">
+                <h3 class="section-title"><span class="material-icons-round">emergency</span> Incident Status</h3>
+                <div class="stats-card">
+                    <div class="stat-item">
+                        <div class="stat-label">TIME ELAPSED</div>
+                        <div class="stat-value" id="sidebar-incident-timer">00:00</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">ROOMS ALERTED</div>
+                        <div class="stat-value" id="sidebar-rooms-alerted-count">0 / 0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">TOTAL MESSAGES</div>
+                        <div class="stat-value" id="sidebar-message-count">0</div>
+                    </div>
+                </div>
+                <div class="incident-info-box">
+                    <div class="incident-status-tag" id="sidebar-incident-type-display">NO ACTIVE INCIDENT</div>
+                    <button class="btn-reset-incident admin-only" id="sidebar-btn-reset-incident" style="display:none">
+                        <span class="material-icons-round">restart_alt</span> RESET SYSTEM
+                    </button>
+                </div>
+            </div>
+
+            <!-- Staff Status -->
+            <div class="staff-section admin-only">
+                <h3 class="section-title"><span class="material-icons-round">group</span> Staff Online</h3>
+                <div class="staff-list" id="staff-list">
+                    <!-- Staff members injected by JS -->
+                </div>
+            </div>
+
+            <!-- Room Status Grid (by floor) -->
+            <div class="room-grid-section">
+                <h3 class="section-title"><span class="material-icons-round">grid_view</span> Room Status — Live</h3>
+                <div class="room-grid-container" id="room-grid-container">
+                    <!-- Floor-grouped room grids injected by JS -->
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <!-- ======================== BROADCAST MODAL ======================== -->
+    <div class="modal-overlay" id="broadcast-modal" style="display:none;">
+        <div class="modal broadcast-modal-card">
+            <div class="modal-header modal-header-emergency">
+                <span class="material-icons-round">campaign</span>
+                <h2>Emergency Broadcast</h2>
+                <button class="btn-icon btn-close-modal" data-modal="broadcast-modal">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="broadcast-severity">Severity Level</label>
+                    <select id="broadcast-severity">
+                        <option value="info">ℹ️ INFO — General Information</option>
+                        <option value="warning">⚠️ WARNING — Caution Required</option>
+                        <option value="critical" selected>🔴 CRITICAL — Immediate Action</option>
+                        <option value="evacuation">🚨 EVACUATION — Leave Immediately</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="broadcast-incident-type">Incident Type</label>
+                    <select id="broadcast-incident-type">
+                        <option value="fire">🔥 Fire</option>
+                        <option value="earthquake">🌍 Earthquake</option>
+                        <option value="flood">🌊 Flood</option>
+                        <option value="gas_leak">☁️ Gas Leak</option>
+                        <option value="structural">🏗️ Structural Damage</option>
+                        <option value="medical">🏥 Medical Emergency</option>
+                        <option value="security">🔒 Security Threat</option>
+                        <option value="other">📋 Other</option>
+                    </select>
+                </div>
+                <div class="form-group" style="display:none">
+                    <label for="broadcast-floor">Target Area</label>
+                    <select id="broadcast-floor">
+                        <option value="1">Entire Building</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="broadcast-message">Broadcast Message</label>
+                    <textarea id="broadcast-message" rows="4" placeholder="Describe the situation in detail..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Broadcast Options</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-item"><input type="checkbox" id="bc-all-rooms" checked> All Rooms</label>
+                        <label class="checkbox-item"><input type="checkbox" id="bc-staff"> Staff Only</label>
+                        <label class="checkbox-item"><input type="checkbox" id="bc-ai-instructions" checked> Generate AI Instructions</label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" data-modal="broadcast-modal">Cancel</button>
+                <button class="btn-danger" id="btn-send-broadcast">
+                    <span class="material-icons-round">campaign</span> SEND BROADCAST
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================== AI VERIFY MODAL ======================== -->
+    <div class="modal-overlay" id="ai-verify-modal" style="display:none;">
+        <div class="modal ai-modal-card">
+            <div class="modal-header modal-header-ai">
+                <span class="material-icons-round">psychology</span>
+                <h2>AI Incident Verification</h2>
+                <button class="btn-icon btn-close-modal" data-modal="ai-verify-modal">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="ai-description">
+                    <p>Submit an incident report to <strong>Gemini AI</strong> for credibility analysis. The AI will assess the report and provide a confidence score, recommended actions, and severity classification.</p>
+                </div>
+                <div class="form-group">
+                    <label for="ai-incident-report">Incident Report</label>
+                    <textarea id="ai-incident-report" rows="5" placeholder="Describe the incident in detail. Include: what happened, where, when, who reported it, any evidence..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="ai-source">Report Source</label>
+                    <select id="ai-source">
+                        <option value="sensor">Sensor / IoT Device</option>
+                        <option value="staff">Staff Report</option>
+                        <option value="visitor">Visitor Report</option>
+                        <option value="cctv" selected>CCTV / Camera</option>
+                        <option value="alarm">Fire Alarm / System</option>
+                        <option value="anonymous">Anonymous</option>
+                    </select>
+                </div>
+                <button class="btn-ai-submit" id="btn-submit-ai-verify">
+                    <span class="material-icons-round">auto_awesome</span> Analyze with Gemini AI
+                </button>
+
+                <!-- AI Result Panel -->
+                <div class="ai-result" id="ai-result" style="display:none;">
+                    <div class="ai-result-header">
+                        <span class="material-icons-round">smart_toy</span>
+                        <h3>AI Analysis Result</h3>
+                    </div>
+                    <div class="ai-confidence-bar">
+                        <label>Credibility Score</label>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="ai-confidence-fill" style="width:0%"></div>
+                        </div>
+                        <span class="confidence-value" id="ai-confidence-value">0%</span>
+                    </div>
+                    <div class="ai-severity-badge" id="ai-severity-badge">—</div>
+                    <div class="ai-analysis-text" id="ai-analysis-text"></div>
+                    <div class="ai-actions" id="ai-recommended-actions"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================== WEBCAM DETECTION MODAL ======================== -->
+    <div class="modal-overlay" id="webcam-modal" style="display:none;">
+        <div class="modal webcam-modal-card">
+            <div class="modal-header modal-header-fire">
+                <span class="material-icons-round">local_fire_department</span>
+                <h2>🔥 Live Fire Detection — Gemini Vision</h2>
+                <button class="btn-icon btn-close-modal" data-modal="webcam-modal">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="webcam-container">
+                    <video id="webcam-video" autoplay playsinline muted></video>
+                    <canvas id="webcam-canvas" style="display:none;"></canvas>
+                    <div class="webcam-overlay" id="webcam-overlay">
+                        <span class="material-icons-round">videocam_off</span>
+                        <p>Click "Start Detection" to activate camera</p>
+                    </div>
+                    <div class="detection-badge" id="detection-badge" style="display:none;">
+                        <span class="detection-dot"></span>
+                        <span id="detection-status-text">SCANNING...</span>
+                    </div>
+                </div>
+                <div class="webcam-controls">
+                    <div class="form-group" style="display:none">
+                        <label for="webcam-floor">Camera Location</label>
+                        <select id="webcam-floor">
+                            <option value="1">Main Building</option>
+                        </select>
+                    </div>
+                    <div class="webcam-btn-row">
+                        <button class="btn-start-detect" id="btn-start-detect">
+                            <span class="material-icons-round">play_arrow</span> Start Detection
+                        </button>
+                        <button class="btn-stop-detect" id="btn-stop-detect" disabled>
+                            <span class="material-icons-round">stop</span> Stop
+                        </button>
+                    </div>
+                </div>
+                <div class="detection-log" id="detection-log">
+                    <h4><span class="material-icons-round">receipt_long</span> Detection Log</h4>
+                    <div class="log-entries" id="log-entries">
+                        <div class="log-entry log-info">System ready. Awaiting camera activation...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================== GUEST ROOM ASSIGNMENT MODAL ======================== -->
+    <div class="modal-overlay" id="guest-modal" style="display:none;">
+        <div class="modal guest-modal-card">
+            <div class="modal-header">
+                <span class="material-icons-round">person_pin</span>
+                <h2>Guest Room Assignment</h2>
+                <button class="btn-icon btn-close-modal" data-modal="guest-modal">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="guest-modal-desc">Select your assigned floor and room number to receive relevant emergency alerts and communicate with the admin team.</p>
+                <div class="form-group">
+                    <label for="guest-name">Your Name</label>
+                    <input type="text" id="guest-name" placeholder="Enter your name..." value="Guest User">
+                </div>
+                <div class="form-group" style="display:none">
+                    <label for="guest-floor">Location</label>
+                    <select id="guest-floor">
+                        <option value="1" selected>Main Building</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="guest-room">Room</label>
+                    <select id="guest-room">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" data-modal="guest-modal">Cancel</button>
+                <button class="btn-primary" id="btn-assign-room">
+                    <span class="material-icons-round">check</span> Confirm & Enter
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================== SETTINGS MODAL ======================== -->
+    <div class="modal-overlay" id="settings-modal" style="display:none;">
+        <div class="modal settings-modal-card">
+            <div class="modal-header">
+                <span class="material-icons-round">settings</span>
+                <h2>Settings</h2>
+                <button class="btn-icon btn-close-modal" data-modal="settings-modal">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="settings-api-key">Gemini API Key</label>
+                    <div class="api-key-input">
+                        <input type="password" id="settings-api-key" placeholder="Enter your Gemini API key...">
+                        <button class="btn-icon" id="btn-toggle-key-visibility" title="Show/Hide">
+                            <span class="material-icons-round">visibility</span>
+                        </button>
+                    </div>
+                    <small class="form-hint">Your key is stored locally and never sent to any server except Google's Gemini API. Required for AI Verify and Fire Detection features.</small>
+                </div>
+                <div class="form-group">
+                    <label>Notification Sound</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-item"><input type="checkbox" id="setting-sound" checked> Enable alert sounds</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Messages</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-item"><input type="checkbox" id="setting-timestamps" checked> Show timestamps</label>
+                        <label class="checkbox-item"><input type="checkbox" id="setting-avatars" checked> Show avatars</label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" data-modal="settings-modal">Close</button>
+                <button class="btn-primary" id="btn-save-settings">
+                    <span class="material-icons-round">check</span> Save Settings
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================== NEW CHANNEL MODAL ======================== -->
+    <div class="modal-overlay" id="new-channel-modal" style="display:none;">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="material-icons-round">add_circle</span>
+                <h2>Create Channel</h2>
+                <button class="btn-icon btn-close-modal" data-modal="new-channel-modal">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="new-channel-name">Channel Name</label>
+                    <input type="text" id="new-channel-name" placeholder="e.g. Floor 4 — ICU Wing">
+                </div>
+                <div class="form-group">
+                    <label for="new-channel-type">Channel Type</label>
+                    <select id="new-channel-type">
+                        <option value="emergency">🚨 Emergency Group</option>
+                        <option value="floor">🏢 Floor Group</option>
+                        <option value="room">🚪 Room</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="new-channel-icon">Icon</label>
+                    <input type="text" id="new-channel-icon" placeholder="e.g. 🏥 or 🔥" maxlength="4" value="🏢">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" data-modal="new-channel-modal">Cancel</button>
+                <button class="btn-primary" id="btn-create-channel">
+                    <span class="material-icons-round">add</span> Create Channel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================== CONFIRM DIALOG ======================== -->
+    <div class="modal-overlay" id="confirm-modal" style="display:none;">
+        <div class="modal confirm-modal-card">
+            <div class="modal-header">
+                <span class="material-icons-round" id="confirm-icon">warning</span>
+                <h2 id="confirm-title">Confirm Action</h2>
+                <button class="btn-icon btn-close-modal" data-modal="confirm-modal">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p id="confirm-message" class="confirm-desc">Are you sure?</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" data-modal="confirm-modal">Cancel</button>
+                <button class="btn-danger" id="btn-confirm-action">
+                    <span class="material-icons-round">check</span> Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================== NOTIFICATION TOAST ======================== -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- ======================== AUDIO ELEMENTS ======================== -->
+    <audio id="audio-alert" preload="auto"></audio>
+    <audio id="audio-message" preload="auto"></audio>
+
+    <script src="message.js"></script>
+</body>
+</html>

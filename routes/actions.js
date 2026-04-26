@@ -80,6 +80,8 @@ router.post('/stop-simulation', async (req, res, next) => {
   try {
     await Log.deleteMany({});
     await User.updateMany({}, { $set: { status: 'idle' } });
+    const Incident = require('../models/Incident');
+    await Incident.updateMany({ status: 'active' }, { $set: { status: 'resolved', simulationRunning: false } });
     res.json({ success: true, message: 'Simulation stopped' });
   } catch (err) {
     next(err);

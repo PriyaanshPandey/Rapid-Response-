@@ -583,18 +583,60 @@ async function refresh(){
   }catch(e){console.error('[Staff1]',e.message);}
 }
 
-refresh();
-setInterval(refresh, 1500);
+// ── BroadcastChannel receiver: instant updates from dashboard ──
+const _bc = (() => {
+  try { return new BroadcastChannel('rr_live'); } catch(e) { return null; }
+})();
 
-// Detect updates from dashboard
+if (_bc) {
+  _bc.onmessage = ({ data }) => {
+    if (data.type !== 'state') return;
+    allUsers = data.users;
+    activeFireNodes = data.fireNodes || [];
+    if (data.meetingPoint) currentMeetingPoint = data.meetingPoint;
+
+    // Instantly re-render everything with the pushed data
+    renderStats(allUsers);
+    renderHelpGuests(allUsers);
+    renderStaff(allUsers);
+    renderGuestList(allUsers);
+    renderMapDots(allUsers);
+    renderFireZones();
+    renderHUD(allUsers);
+
+    // Draw rescue paths from broadcast cache
+    if (data.paths) {
+      Object.entries(data.paths).forEach(([id, pd]) => {
+        if (pd.role !== STAFF_ROLE) return;
+        if (Date.now() - pd.ts > 60000) return;
+        if (!document.getElementById(`path-main-${id}`)) {
+          drawSharedPath(id, pd.points, pd.color || '#ff4d4d', true);
+        }
+      });
+    }
+    flashFooter();
+  };
+}
+
+// Fallback API poll — only fires when broadcast is unavailable or tab was backgrounded
+refresh();
+setInterval(async () => {
+  // Only hit API if we haven't received a broadcast in the last 3 seconds
+  if (!_bc || Date.now() - _lastBroadcast > 3000) {
+    await refresh();
+  }
+}, 2000);
+
+let _lastBroadcast = 0;
+if (_bc) {
+  const orig = _bc.onmessage;
+  _bc.onmessage = (e) => { _lastBroadcast = Date.now(); orig(e); };
+}
+
 window.addEventListener('storage', (e) => {
-  if(e.key === 'rr_activePaths') renderActivePaths();
-  if(e.key === 'floorPlanImage' && e.newValue) document.getElementById('map-img').src = e.newValue;
-  if(e.key === 'floorPlanGraph' && e.newValue) {
-    try {
-      const g = JSON.parse(e.newValue);
-      Object.assign(NODE_POSITIONS, g.NODE_POSITIONS);
-    } catch(err) {}
+  if (e.key === 'floorPlanImage' && e.newValue) document.getElementById('map-img').src = e.newValue;
+  if (e.key === 'floorPlanGraph' && e.newValue) {
+    try { const g = JSON.parse(e.newValue); Object.assign(NODE_POSITIONS, g.NODE_POSITIONS); } catch(err) {}
   }
 });
 </script>
